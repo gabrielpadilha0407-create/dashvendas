@@ -10,6 +10,7 @@ interface VendaPayload {
   data: string;
   tipo: TipoVenda;
   valor: number;
+  valor_setup: number | null;
   cliente: string;
   observacao: string | null;
   sdr_id: string | null;
@@ -35,6 +36,15 @@ function parseVendaForm(formData: FormData): ParseResult {
     return { ok: false, error: "Preencha data, tipo, cliente e um valor válido." };
   }
 
+  const setupRaw = ((formData.get("valor_setup") as string) ?? "").trim();
+  let valorSetup: number | null = null;
+  if (tipo === "MRR" && setupRaw) {
+    valorSetup = Number(setupRaw.replace(",", "."));
+    if (Number.isNaN(valorSetup) || valorSetup <= 0) {
+      return { ok: false, error: "Valor de setup inválido." };
+    }
+  }
+
   if (tipo === "Monetização") {
     if (!operacionalId) {
       return { ok: false, error: "Selecione quem da Operação fechou essa monetização." };
@@ -45,6 +55,7 @@ function parseVendaForm(formData: FormData): ParseResult {
         data,
         tipo,
         valor,
+        valor_setup: null,
         cliente,
         observacao,
         sdr_id: null,
@@ -63,6 +74,7 @@ function parseVendaForm(formData: FormData): ParseResult {
       data,
       tipo,
       valor,
+      valor_setup: valorSetup,
       cliente,
       observacao,
       sdr_id: sdrId,
@@ -79,24 +91,6 @@ export async function createVenda(_prev: ActionState, formData: FormData): Promi
   const supabase = supabaseServer();
   const { error } = await supabase.from("vendas").insert(parsed.payload);
   if (error) return { error: error.message };
-
-  if (parsed.payload.tipo === "MRR") {
-    const setupRaw = ((formData.get("valor_setup") as string) ?? "").trim();
-    const setupValor = Number(setupRaw.replace(",", "."));
-    if (setupRaw && !Number.isNaN(setupValor) && setupValor > 0) {
-      const { error: setupError } = await supabase.from("vendas").insert({
-        ...parsed.payload,
-        tipo: "Não recorrente",
-        valor: setupValor,
-        observacao: parsed.payload.observacao
-          ? `${parsed.payload.observacao} (setup)`
-          : "Setup",
-      });
-      if (setupError) {
-        return { error: `Venda MRR criada, mas o setup falhou: ${setupError.message}` };
-      }
-    }
-  }
 
   revalidatePath("/");
   return { error: null };

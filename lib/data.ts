@@ -47,6 +47,7 @@ interface SaleAgg {
   data: string;
   tipo: TipoVenda;
   valor: number;
+  valor_setup: number | null;
   sdr_id: string | null;
   closer_id: string | null;
   operacional_id: string | null;
@@ -62,7 +63,7 @@ export async function getRankingData(mes: string): Promise<Rankings> {
   const supabase = supabaseServer();
   const { data: vendas, error } = await supabase
     .from("vendas")
-    .select("data, tipo, valor, sdr_id, closer_id, operacional_id");
+    .select("data, tipo, valor, valor_setup, sdr_id, closer_id, operacional_id");
   if (error) throw error;
 
   const pessoas = await getPessoas();
@@ -77,7 +78,7 @@ export async function getRankingData(mes: string): Promise<Rankings> {
         const pessoaId = v[key];
         if (!pessoaId) continue;
         const entry = map.get(pessoaId) ?? { total: 0, totalMrr: 0 };
-        entry.total += v.valor;
+        entry.total += v.valor + (v.valor_setup ?? 0);
         if (v.tipo === "MRR") entry.totalMrr += v.valor;
         map.set(pessoaId, entry);
       }

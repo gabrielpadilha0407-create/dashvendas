@@ -80,10 +80,9 @@ export function RankingsSection({ rankings }: { rankings: Rankings }) {
             </Tabs>
           </div>
         </DialogHeader>
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-2">
           <RankingList title="Closers" items={rankings.closers[scope]} showMrr />
           <RankingList title="SDRs" items={rankings.sdrs[scope]} showMrr />
-          <RankingList title="Operacional (Monetização)" items={rankings.operacional[scope]} showMrr={false} />
         </div>
       </DialogContent>
     </Dialog>

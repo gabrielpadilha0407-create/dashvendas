@@ -15,6 +15,7 @@ export interface Venda {
   data: string;
   tipo: TipoVenda;
   valor: number;
+  valor_setup: number | null;
   cliente: string;
   observacao: string | null;
   sdr_id: string | null;

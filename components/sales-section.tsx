@@ -52,20 +52,20 @@ export function SalesSection({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle>Vendas do mês</CardTitle>
+        <CardTitle className="text-2xl">Vendas do mês</CardTitle>
         <SaleFormDialog pessoas={pessoas} />
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Cliente</TableHead>
               <TableHead>
                 <button className="flex items-center gap-1 hover:text-foreground" onClick={() => toggleSort("data")}>
                   Data <ArrowUpDown className="h-3 w-3" />
                 </button>
               </TableHead>
               <TableHead>Tipo</TableHead>
-              <TableHead>Cliente</TableHead>
               <TableHead>SDR</TableHead>
               <TableHead>Closer / Operacional</TableHead>
               <TableHead>
@@ -86,14 +86,23 @@ export function SalesSection({
             )}
             {sorted.map((venda) => (
               <TableRow key={venda.id}>
-                <TableCell>{new Date(`${venda.data}T00:00:00`).toLocaleDateString("pt-BR")}</TableCell>
+                <TableCell className="text-base font-semibold">{venda.cliente}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {new Date(`${venda.data}T00:00:00`).toLocaleDateString("pt-BR")}
+                </TableCell>
                 <TableCell>
                   <Badge variant={tipoBadgeVariant[venda.tipo]}>{venda.tipo}</Badge>
                 </TableCell>
-                <TableCell>{venda.cliente}</TableCell>
                 <TableCell className="text-muted-foreground">{venda.sdr?.nome ?? "—"}</TableCell>
                 <TableCell>{venda.closer?.nome ?? venda.operacional?.nome ?? "—"}</TableCell>
-                <TableCell className="font-medium">{formatCurrency(venda.valor)}</TableCell>
+                <TableCell className="font-medium">
+                  {formatCurrency(venda.valor)}
+                  {venda.valor_setup ? (
+                    <div className="text-xs font-normal text-warning">
+                      + {formatCurrency(venda.valor_setup)} setup
+                    </div>
+                  ) : null}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
                     <SaleFormDialog pessoas={pessoas} venda={venda} />

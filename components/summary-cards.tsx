@@ -107,9 +107,11 @@ export function SummaryCards({
   vendas: VendaComPessoas[];
 }) {
   const totalMrr = vendas.filter((v) => v.tipo === "MRR").reduce((s, v) => s + v.valor, 0);
-  const totalNaoRecorrente = vendas
-    .filter((v) => v.tipo === "Não recorrente")
-    .reduce((s, v) => s + v.valor, 0);
+  const totalSetup = vendas
+    .filter((v) => v.tipo === "MRR")
+    .reduce((s, v) => s + (v.valor_setup ?? 0), 0);
+  const totalNaoRecorrente =
+    vendas.filter((v) => v.tipo === "Não recorrente").reduce((s, v) => s + v.valor, 0) + totalSetup;
   const totalMonetizacao = vendas
     .filter((v) => v.tipo === "Monetização")
     .reduce((s, v) => s + v.valor, 0);

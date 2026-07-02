@@ -164,7 +164,7 @@ export function SaleFormDialog({
             </div>
           )}
 
-          {!isEdit && tipo === "MRR" && (
+          {tipo === "MRR" && (
             <div className="space-y-2">
               <Label htmlFor="valor_setup">Setup / não recorrente (opcional)</Label>
               <Input
@@ -172,10 +172,11 @@ export function SaleFormDialog({
                 name="valor_setup"
                 type="text"
                 inputMode="decimal"
+                defaultValue={venda?.valor_setup ?? ""}
                 placeholder="0,00"
               />
               <p className="text-xs text-muted-foreground">
-                Se preenchido, lança automaticamente uma segunda venda do tipo Não recorrente para o mesmo cliente.
+                Valor de implementação/setup incluso nesta mesma venda (opcional).
               </p>
             </div>
           )}
