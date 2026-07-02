@@ -6,7 +6,20 @@ import type { TipoVenda } from "@/lib/types";
 
 export type ActionState = { error: string | null };
 
-function parseVendaForm(formData: FormData) {
+interface VendaPayload {
+  data: string;
+  tipo: TipoVenda;
+  valor: number;
+  cliente: string;
+  observacao: string | null;
+  sdr_id: string | null;
+  closer_id: string | null;
+  operacional_id: string | null;
+}
+
+type ParseResult = { ok: true; payload: VendaPayload } | { ok: false; error: string };
+
+function parseVendaForm(formData: FormData): ParseResult {
   const data = formData.get("data") as string;
   const tipo = formData.get("tipo") as TipoVenda;
   const valorRaw = (formData.get("valor") as string) ?? "";
@@ -19,14 +32,15 @@ function parseVendaForm(formData: FormData) {
   const valor = Number(valorRaw.replace(",", "."));
 
   if (!data || !tipo || !cliente || Number.isNaN(valor) || valor <= 0) {
-    return { error: "Preencha data, tipo, cliente e um valor válido." } as const;
+    return { ok: false, error: "Preencha data, tipo, cliente e um valor válido." };
   }
 
   if (tipo === "Monetização") {
     if (!operacionalId) {
-      return { error: "Selecione quem da Operação fechou essa monetização." } as const;
+      return { ok: false, error: "Selecione quem da Operação fechou essa monetização." };
     }
     return {
+      ok: true,
       payload: {
         data,
         tipo,
@@ -37,13 +51,14 @@ function parseVendaForm(formData: FormData) {
         closer_id: null,
         operacional_id: operacionalId,
       },
-    } as const;
+    };
   }
 
   if (!closerId) {
-    return { error: "Selecione o Closer que fechou a venda." } as const;
+    return { ok: false, error: "Selecione o Closer que fechou a venda." };
   }
   return {
+    ok: true,
     payload: {
       data,
       tipo,
@@ -54,12 +69,12 @@ function parseVendaForm(formData: FormData) {
       closer_id: closerId,
       operacional_id: null,
     },
-  } as const;
+  };
 }
 
 export async function createVenda(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = parseVendaForm(formData);
-  if ("error" in parsed) return { error: parsed.error };
+  if (!parsed.ok) return { error: parsed.error };
 
   const supabase = supabaseServer();
   const { error } = await supabase.from("vendas").insert(parsed.payload);
@@ -75,7 +90,7 @@ export async function updateVenda(
   formData: FormData,
 ): Promise<ActionState> {
   const parsed = parseVendaForm(formData);
-  if ("error" in parsed) return { error: parsed.error };
+  if (!parsed.ok) return { error: parsed.error };
 
   const supabase = supabaseServer();
   const { error } = await supabase.from("vendas").update(parsed.payload).eq("id", id);

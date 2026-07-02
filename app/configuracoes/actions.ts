@@ -6,18 +6,22 @@ import type { Papel } from "@/lib/types";
 
 export type ActionState = { error: string | null };
 
-function parsePessoaForm(formData: FormData) {
+type ParseResult =
+  | { ok: true; payload: { nome: string; papel: Papel } }
+  | { ok: false; error: string };
+
+function parsePessoaForm(formData: FormData): ParseResult {
   const nome = ((formData.get("nome") as string) ?? "").trim();
   const papel = formData.get("papel") as Papel;
   if (!nome || !papel) {
-    return { error: "Preencha nome e papel." } as const;
+    return { ok: false, error: "Preencha nome e papel." };
   }
-  return { payload: { nome, papel } } as const;
+  return { ok: true, payload: { nome, papel } };
 }
 
 export async function createPessoa(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = parsePessoaForm(formData);
-  if ("error" in parsed) return { error: parsed.error };
+  if (!parsed.ok) return { error: parsed.error };
 
   const supabase = supabaseServer();
   const { error } = await supabase.from("pessoas").insert({ ...parsed.payload, ativo: true });
@@ -34,7 +38,7 @@ export async function updatePessoa(
   formData: FormData,
 ): Promise<ActionState> {
   const parsed = parsePessoaForm(formData);
-  if ("error" in parsed) return { error: parsed.error };
+  if (!parsed.ok) return { error: parsed.error };
 
   const supabase = supabaseServer();
   const { error } = await supabase.from("pessoas").update(parsed.payload).eq("id", id);
