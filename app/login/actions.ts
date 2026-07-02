@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 
 const COOKIE_NAME = "team_session";
 
-export async function login(_prevState: { error: string | null }, formData: FormData) {
+export type ActionState = { error: string | null };
+
+export async function login(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const password = formData.get("password");
 
   if (typeof password !== "string" || password.length === 0 || password !== process.env.TEAM_PASSWORD) {

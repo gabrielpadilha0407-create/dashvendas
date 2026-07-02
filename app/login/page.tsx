@@ -1,14 +1,16 @@
 "use client";
 
 import { useActionState } from "react";
-import { login } from "./actions";
+import { login, type ActionState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
+const initialState: ActionState = { error: null };
+
 export default function LoginPage() {
-  const [state, formAction, pending] = useActionState(login, { error: null });
+  const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
