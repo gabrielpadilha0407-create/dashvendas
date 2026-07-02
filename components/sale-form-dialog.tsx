@@ -164,6 +164,22 @@ export function SaleFormDialog({
             </div>
           )}
 
+          {!isEdit && tipo === "MRR" && (
+            <div className="space-y-2">
+              <Label htmlFor="valor_setup">Setup / não recorrente (opcional)</Label>
+              <Input
+                id="valor_setup"
+                name="valor_setup"
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+              />
+              <p className="text-xs text-muted-foreground">
+                Se preenchido, lança automaticamente uma segunda venda do tipo Não recorrente para o mesmo cliente.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="observacao">Observação (opcional)</Label>
             <Textarea id="observacao" name="observacao" defaultValue={venda?.observacao ?? ""} />

@@ -47,7 +47,10 @@ export default async function DashboardPage({
 
         <SalesSection vendas={vendas} pessoas={pessoas} />
 
-        <RankingsSection rankings={rankings} />
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Rankings</h2>
+          <RankingsSection rankings={rankings} />
+        </div>
       </div>
     </div>
   );

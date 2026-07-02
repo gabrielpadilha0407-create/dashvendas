@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Trophy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import type { RankingItem } from "@/lib/types";
 import type { Rankings } from "@/lib/data";
 
@@ -29,7 +32,12 @@ function RankingList({
             {items.map((item, i) => (
               <li key={item.pessoa_id} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground">
+                  <span
+                    className={cn(
+                      "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium",
+                      i === 0 ? "bg-warning text-warning-foreground" : "bg-secondary text-secondary-foreground",
+                    )}
+                  >
                     {i + 1}
                   </span>
                   <span className="font-medium">{item.nome}</span>
@@ -53,21 +61,31 @@ export function RankingsSection({ rankings }: { rankings: Rankings }) {
   const [scope, setScope] = useState<"mes" | "total">("mes");
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Rankings</h2>
-        <Tabs value={scope} onValueChange={(v) => setScope(v as "mes" | "total")}>
-          <TabsList>
-            <TabsTrigger value="mes">Mês selecionado</TabsTrigger>
-            <TabsTrigger value="total">Total geral</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-      <div className="grid gap-4 lg:grid-cols-3">
-        <RankingList title="Closers" items={rankings.closers[scope]} showMrr />
-        <RankingList title="SDRs" items={rankings.sdrs[scope]} showMrr />
-        <RankingList title="Operacional (Monetização)" items={rankings.operacional[scope]} showMrr={false} />
-      </div>
-    </div>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="gap-2">
+          <Trophy className="h-4 w-4" />
+          Ver rankings
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
+        <DialogHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3 pr-6">
+            <DialogTitle>Rankings</DialogTitle>
+            <Tabs value={scope} onValueChange={(v) => setScope(v as "mes" | "total")}>
+              <TabsList>
+                <TabsTrigger value="mes">Mês selecionado</TabsTrigger>
+                <TabsTrigger value="total">Total geral</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </DialogHeader>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <RankingList title="Closers" items={rankings.closers[scope]} showMrr />
+          <RankingList title="SDRs" items={rankings.sdrs[scope]} showMrr />
+          <RankingList title="Operacional (Monetização)" items={rankings.operacional[scope]} showMrr={false} />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

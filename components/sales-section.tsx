@@ -13,9 +13,9 @@ import type { Pessoa, TipoVenda, VendaComPessoas } from "@/lib/types";
 
 type SortKey = "data" | "valor";
 
-const tipoBadgeVariant: Record<TipoVenda, "success" | "secondary" | "default"> = {
+const tipoBadgeVariant: Record<TipoVenda, "success" | "warning" | "default"> = {
   MRR: "success",
-  "Não recorrente": "secondary",
+  "Não recorrente": "warning",
   "Monetização": "default",
 };
 

@@ -80,6 +80,24 @@ export async function createVenda(_prev: ActionState, formData: FormData): Promi
   const { error } = await supabase.from("vendas").insert(parsed.payload);
   if (error) return { error: error.message };
 
+  if (parsed.payload.tipo === "MRR") {
+    const setupRaw = ((formData.get("valor_setup") as string) ?? "").trim();
+    const setupValor = Number(setupRaw.replace(",", "."));
+    if (setupRaw && !Number.isNaN(setupValor) && setupValor > 0) {
+      const { error: setupError } = await supabase.from("vendas").insert({
+        ...parsed.payload,
+        tipo: "Não recorrente",
+        valor: setupValor,
+        observacao: parsed.payload.observacao
+          ? `${parsed.payload.observacao} (setup)`
+          : "Setup",
+      });
+      if (setupError) {
+        return { error: `Venda MRR criada, mas o setup falhou: ${setupError.message}` };
+      }
+    }
+  }
+
   revalidatePath("/");
   return { error: null };
 }
