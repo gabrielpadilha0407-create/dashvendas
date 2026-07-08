@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatPercent } from "@/lib/utils";
+import { cn, formatCurrency, formatPercent } from "@/lib/utils";
 import { updateMeta } from "@/app/actions";
 import type { Meta, VendaComPessoas } from "@/lib/types";
 
@@ -29,6 +29,7 @@ function GoalCard({
   const [value, setValue] = useState(String(meta));
   const [isPending, startTransition] = useTransition();
   const pct = meta > 0 ? (atual / meta) * 100 : atual > 0 ? 100 : 0;
+  const restante = meta - atual;
 
   function save() {
     const parsed = Number(value.replace(",", "."));
@@ -86,9 +87,18 @@ function GoalCard({
             </Button>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">
-            Meta: {formatCurrency(meta)} · {formatPercent(pct)}
-          </p>
+          <div className="space-y-0.5">
+            <p className="text-xs text-muted-foreground">
+              Meta: {formatCurrency(meta)} · {formatPercent(pct)}
+            </p>
+            {meta > 0 && (
+              <p className={cn("text-xs font-medium", restante > 0 ? "text-warning" : "text-success")}>
+                {restante > 0
+                  ? `Falta ${formatCurrency(restante)}`
+                  : `Meta batida (+${formatCurrency(-restante)})`}
+              </p>
+            )}
+          </div>
         )}
 
         <Progress value={Math.min(pct, 100)} />
