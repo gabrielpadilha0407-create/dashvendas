@@ -4,7 +4,14 @@ import { brl, brlCurto, inteiro, pct } from "@/lib/painel/formato";
 import { cn } from "@/lib/utils";
 import { Barra, Bloco, SeloFaixa, td, th } from "./ui";
 
-/** Realizado / meta com mini barra de progresso, para as colunas de MRR e não recorrente. */
+/** Quanto falta para a meta: valor, "Meta batida" ou "—" sem meta. */
+function Falta({ realizado, meta, className }: { realizado: number; meta: number; className?: string }) {
+  if (meta <= 0) return <span className={cn("text-muted-foreground", className)}>—</span>;
+  if (realizado >= meta) return <span className={cn("text-[#3fd13f]", className)}>Meta batida</span>;
+  return <span className={className}>{brl(meta - realizado)}</span>;
+}
+
+/** Realizado / meta com mini barra de progresso e quanto falta, para as colunas de MRR e não recorrente. */
 function Parcial({ realizado, meta, p }: { realizado: number; meta: number; p: number | null }) {
   return (
     <div className="flex flex-col items-end gap-1">
@@ -16,6 +23,11 @@ function Parcial({ realizado, meta, p }: { realizado: number; meta: number; p: n
         <span className="w-10 shrink-0 text-right text-sm">{pct(p)}</span>
         <Barra pct={p} faixa={faixaDe(p)} />
       </div>
+      {meta > 0 && (
+        <span className="whitespace-nowrap text-xs text-muted-foreground">
+          {realizado >= meta ? <Falta realizado={realizado} meta={meta} /> : <>falta {brl(meta - realizado)}</>}
+        </span>
+      )}
     </div>
   );
 }
@@ -41,13 +53,14 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
         <p className="text-muted-foreground">Nenhum closer ativo ou com vendas neste mês.</p>
       ) : (
         <div className="-mx-3 overflow-x-auto">
-          <table className="w-full min-w-[940px] border-collapse">
+          <table className="w-full min-w-[1060px] border-collapse">
             <thead>
               <tr className="border-b border-border">
                 <th className={th}>#</th>
                 <th className={th}>Closer</th>
                 <th className={cn(th, "text-right")}>Realizado / meta</th>
                 <th className={cn(th, "w-40")}>% da meta</th>
+                <th className={cn(th, "text-right")}>Falta</th>
                 <th className={cn(th, "text-right")}>MRR</th>
                 <th className={cn(th, "text-right")}>Não recorrente</th>
                 <th className={cn(th, "text-right")}>Vendas</th>
@@ -79,6 +92,9 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
                         <Barra pct={l.pct} faixa={faixa} />
                       </div>
                     </td>
+                    <td className={cn(td, "whitespace-nowrap text-right font-semibold")}>
+                      <Falta realizado={l.realizado} meta={l.meta ?? 0} />
+                    </td>
                     <td className={td}>
                       <Parcial realizado={l.mrr} meta={l.metaMrr} p={l.pctMrr} />
                     </td>
@@ -100,6 +116,9 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
                   <span className="text-sm text-muted-foreground"> / {brlCurto(somaMetas.total)}</span>
                 </td>
                 <td className={td} />
+                <td className={cn(td, "whitespace-nowrap text-right font-semibold")}>
+                  {brl(linhas.reduce((s, l) => s + Math.max(0, (l.meta ?? 0) - l.realizado), 0))}
+                </td>
                 <td className={cn(td, "whitespace-nowrap text-right")}>
                   <span className="font-semibold">{brl(totalMrr)}</span>
                   <span className="text-sm text-muted-foreground"> / {brlCurto(somaMetas.mrr)}</span>

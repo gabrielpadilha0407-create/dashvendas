@@ -58,7 +58,7 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
 
       {blocoOuErro(["vendas", "metas"], "Metas do mês", <CartoesMetas dados={dados} mes={mes} hoje={hoje} />)}
 
-      <div className="grid gap-6 min-[1800px]:grid-cols-[11fr_9fr]">
+      <div className="grid gap-6 min-[2400px]:grid-cols-[11fr_9fr]">
         {blocoOuErro(
           ["pessoas", "vendas", "metas_individuais"],
           "Ranking de closers",

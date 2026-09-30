@@ -21,7 +21,7 @@ export default function Carregando() {
           </Bloco>
         ))}
       </div>
-      <div className="grid gap-6 min-[1800px]:grid-cols-[11fr_9fr]">
+      <div className="grid gap-6 min-[2400px]:grid-cols-[11fr_9fr]">
         {[0, 1].map((i) => (
           <Bloco key={i}>
             <Esqueleto className="h-6 w-48" />

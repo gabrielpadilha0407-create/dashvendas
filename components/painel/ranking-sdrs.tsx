@@ -13,13 +13,14 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
         <p className="text-muted-foreground">Nenhum SDR ativo ou com vendas neste mês.</p>
       ) : (
         <div className="-mx-3 overflow-x-auto">
-          <table className="w-full min-w-[760px] border-collapse">
+          <table className="w-full min-w-[860px] border-collapse">
             <thead>
               <tr className="border-b border-border">
                 <th className={th}>#</th>
                 <th className={th}>SDR</th>
                 <th className={cn(th, "text-right")}>Reuniões / meta</th>
                 <th className={cn(th, "w-40")}>% da meta</th>
+                <th className={cn(th, "text-right")}>Faltam</th>
                 <th className={cn(th, "text-right")}>Vendas</th>
                 <th className={cn(th, "text-right")}>Receita originada</th>
                 <th className={cn(th, "text-right")}>Conversão</th>
@@ -50,6 +51,15 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
                         <Barra pct={l.pct} faixa={faixa} />
                       </div>
                     </td>
+                    <td className={cn(td, "whitespace-nowrap text-right font-semibold")}>
+                      {l.metaReunioes === null ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : l.realizadas >= l.metaReunioes ? (
+                        <span className="text-[#3fd13f]">Meta batida</span>
+                      ) : (
+                        `${inteiro(l.metaReunioes - l.realizadas)} ${l.metaReunioes - l.realizadas === 1 ? "reunião" : "reuniões"}`
+                      )}
+                    </td>
                     <td className={cn(td, "text-right")}>{inteiro(l.vendas)}</td>
                     <td className={cn(td, "text-right font-semibold")}>{brl(l.receita)}</td>
                     <td className={cn(td, "text-right")}>{pct(l.conversao)}</td>
@@ -64,7 +74,11 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
                 <td className={cn(td, "text-right font-semibold")}>
                   {inteiro(totalRealizadas)} <span className="font-normal text-muted-foreground">/ {inteiro(somaMetas)}</span>
                 </td>
-                <td colSpan={4} />
+                <td className={td} />
+                <td className={cn(td, "whitespace-nowrap text-right font-semibold")}>
+                  {inteiro(linhas.reduce((s, l) => s + Math.max(0, (l.metaReunioes ?? 0) - l.realizadas), 0))}
+                </td>
+                <td colSpan={3} />
               </tr>
             </tfoot>
           </table>
