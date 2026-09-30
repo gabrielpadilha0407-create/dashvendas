@@ -79,6 +79,8 @@ Usa as mesmas pessoas e vendas lançadas no dashboard e a mesma senha de equipe.
   closer com meta de MRR e de não recorrente (a meta total é a soma), SDR em número de reuniões
   realizadas. Botão para copiar do mês anterior. Requer também `supabase/003_metas_closer_mrr_nr.sql`.
 - **`/painel/reunioes`:** lançamento das reuniões dos SDRs (realizada, no-show, remarcada).
+- **Comemoração:** quando a meta de aquisição, MRR ou não recorrente do mês atual é batida, o painel solta fogos
+  uma vez por meta em cada aparelho. Para testar: `/painel?comemorar=1`.
 - **Regras:** aquisição = MRR + não recorrente; o setup de uma venda MRR conta como não recorrente;
   Monetização não entra no painel. Ritmo necessário = quanto falta ÷ dias úteis restantes (contando hoje),
   descontando os feriados de [`lib/painel/feriados.ts`](lib/painel/feriados.ts) (calculados para qualquer ano).

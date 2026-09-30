@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getPainelDados, type Tabela } from "@/lib/painel/data";
-import { anoDe, anosDisponiveis, hojeSP, pendencias, resolverMes } from "@/lib/painel/calc";
+import { anoDe, anosDisponiveis, hojeSP, metaGlobal, pendencias, resolverMes, resumir } from "@/lib/painel/calc";
 import { Atualizar } from "@/components/painel/atualizar";
+import { Comemoracao, type MetaComemoravel } from "@/components/painel/comemoracao";
 import { CartoesMetas } from "@/components/painel/cartoes-metas";
 import { RankingClosers } from "@/components/painel/ranking-closers";
 import { RankingSdrs } from "@/components/painel/ranking-sdrs";
@@ -11,7 +12,11 @@ import { VisaoAno } from "@/components/painel/visao-ano";
 
 export const dynamic = "force-dynamic";
 
-export default async function PainelPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
+export default async function PainelPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string; comemorar?: string }>;
+}) {
   const params = await searchParams;
   const hoje = hojeSP();
   const mesAtual = hoje.slice(0, 7);
@@ -23,6 +28,19 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
   const falhou = new Set<Tabela>(erros.map((e) => e.tabela));
   const faltando = (...tabelas: Tabela[]) => tabelas.filter((t) => falhou.has(t));
   const pend = pendencias(dados, mes);
+
+  // Comemoração: só no mês corrente e só com vendas e metas lidas sem erro
+  const global = metaGlobal(dados, mes);
+  const feito = resumir(dados.vendas.filter((v) => v.data.startsWith(mes)));
+  const bateu = (realizado: number, meta: number | undefined) => !!meta && meta > 0 && realizado >= meta;
+  const podeComemorar = mes === mesAtual && !falhou.has("vendas") && !falhou.has("metas");
+  const metasComemoraveis: MetaComemoravel[] = podeComemorar
+    ? [
+        { chave: "aquisicao", rotulo: "aquisição total", batida: bateu(feito.aquisicao, global?.aquisicao) },
+        { chave: "mrr", rotulo: "MRR", batida: bateu(feito.mrr, global?.mrr) },
+        { chave: "nao_recorrente", rotulo: "não recorrente", batida: bateu(feito.naoRecorrente, global?.naoRecorrente) },
+      ]
+    : [];
 
   const blocoOuErro = (tabelas: Tabela[], titulo: string, conteudo: React.ReactNode) => {
     const f = faltando(...tabelas);
@@ -37,6 +55,7 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
+      <Comemoracao mes={mes} metas={metasComemoraveis} forcar={params.comemorar === "1"} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <SeletorMes mes={mes} anos={anosDisponiveis(hoje)} />
