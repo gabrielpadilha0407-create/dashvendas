@@ -21,7 +21,16 @@ export type VendaP = {
   closer_id: string | null;
 };
 export type MetaGlobalP = { mes: string; meta_mrr: number; meta_nao_recorrente: number };
-export type MetaIndividualP = { mes: string; pessoa_id: string; meta_valor: number; meta_reunioes: number };
+export type MetaIndividualP = {
+  mes: string;
+  pessoa_id: string;
+  meta_mrr: number;
+  meta_nao_recorrente: number;
+  meta_reunioes: number;
+};
+
+/** Meta total do closer = MRR + não recorrente. */
+export const metaTotalCloser = (m: MetaIndividualP | undefined) => (m ? m.meta_mrr + m.meta_nao_recorrente : 0);
 export type ReuniaoP = {
   id: string;
   data: string;
@@ -149,11 +158,15 @@ function nome(d: PainelDados, id: string) {
 export type LinhaCloser = {
   id: string;
   nome: string;
-  meta: number | null;
+  meta: number | null; // total = MRR + não recorrente
+  metaMrr: number;
+  metaNaoRecorrente: number;
   realizado: number;
   pct: number | null;
   mrr: number;
+  pctMrr: number | null;
   naoRecorrente: number;
+  pctNaoRecorrente: number | null;
   qtd: number;
   ticket: number | null;
 };
@@ -166,27 +179,37 @@ export function rankingClosers(d: PainelDados, mes: string) {
   const ids = new Set<string>();
   for (const p of d.pessoas) if (p.papel === "Closer" && p.ativo) ids.add(p.id);
   for (const v of vendasMes) if (v.closer_id) ids.add(v.closer_id);
-  for (const m of metasMes) if (closers.has(m.pessoa_id) && m.meta_valor > 0) ids.add(m.pessoa_id);
+  for (const m of metasMes) if (closers.has(m.pessoa_id) && metaTotalCloser(m) > 0) ids.add(m.pessoa_id);
 
   const linhas: LinhaCloser[] = [...ids].map((id) => {
     const r = resumir(vendasMes.filter((v) => v.closer_id === id));
-    const metaValor = metasMes.find((m) => m.pessoa_id === id)?.meta_valor ?? 0;
-    const meta = metaValor > 0 ? metaValor : null;
+    const m = metasMes.find((x) => x.pessoa_id === id);
+    const metaMrr = m?.meta_mrr ?? 0;
+    const metaNaoRecorrente = m?.meta_nao_recorrente ?? 0;
+    const total = metaMrr + metaNaoRecorrente;
     return {
       id,
       nome: nome(d, id),
-      meta,
+      meta: total > 0 ? total : null,
+      metaMrr,
+      metaNaoRecorrente,
       realizado: r.aquisicao,
-      pct: meta === null ? null : percentual(r.aquisicao, meta),
+      pct: percentual(r.aquisicao, total),
       mrr: r.mrr,
+      pctMrr: percentual(r.mrr, metaMrr),
       naoRecorrente: r.naoRecorrente,
+      pctNaoRecorrente: percentual(r.naoRecorrente, metaNaoRecorrente),
       qtd: r.qtd,
       ticket: r.qtd > 0 ? r.aquisicao / r.qtd : null,
     };
   });
   linhas.sort((a, b) => b.realizado - a.realizado || a.nome.localeCompare(b.nome, "pt-BR"));
 
-  const somaMetas = linhas.reduce((s, l) => s + (l.meta ?? 0), 0);
+  const somaMetas = {
+    mrr: linhas.reduce((s, l) => s + l.metaMrr, 0),
+    naoRecorrente: linhas.reduce((s, l) => s + l.metaNaoRecorrente, 0),
+    total: linhas.reduce((s, l) => s + (l.meta ?? 0), 0),
+  };
   return { linhas, somaMetas };
 }
 
@@ -284,7 +307,7 @@ export function pendencias(d: PainelDados, mes: string): string[] {
   for (const p of d.pessoas) {
     if (!p.ativo) continue;
     const m = metasMes.find((x) => x.pessoa_id === p.id);
-    if (p.papel === "Closer" && !(m && m.meta_valor > 0)) itens.push(`${p.nome} (closer) está sem meta no mês.`);
+    if (p.papel === "Closer" && metaTotalCloser(m) === 0) itens.push(`${p.nome} (closer) está sem meta no mês.`);
     if (p.papel === "SDR" && !(m && m.meta_reunioes > 0)) itens.push(`${p.nome} (SDR) está sem meta de reuniões no mês.`);
   }
   return itens;

@@ -76,7 +76,8 @@ Usa as mesmas pessoas e vendas lançadas no dashboard e a mesma senha de equipe.
   Ele cria as tabelas `metas_individuais` e `reunioes`.
 - **`/painel`:** visão TV. Relê os dados a cada 5 minutos; o botão Atualizar força a leitura.
 - **`/painel/metas`:** meta global do mês (MRR e não recorrente) e meta de cada pessoa —
-  closer em R$ de aquisição, SDR em número de reuniões realizadas. Botão para copiar do mês anterior.
+  closer com meta de MRR e de não recorrente (a meta total é a soma), SDR em número de reuniões
+  realizadas. Botão para copiar do mês anterior. Requer também `supabase/003_metas_closer_mrr_nr.sql`.
 - **`/painel/reunioes`:** lançamento das reuniões dos SDRs (realizada, no-show, remarcada).
 - **Regras:** aquisição = MRR + não recorrente; o setup de uma venda MRR conta como não recorrente;
   Monetização não entra no painel. Ritmo necessário = quanto falta ÷ dias úteis restantes (contando hoje),

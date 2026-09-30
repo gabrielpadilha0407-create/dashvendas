@@ -1,5 +1,5 @@
 import { getPainelDados } from "@/lib/painel/data";
-import { MESES, hojeSP, resolverMes } from "@/lib/painel/calc";
+import { MESES, hojeSP, resolverMes, type MetaIndividualP } from "@/lib/painel/calc";
 import { EditorMetas, type PessoaMeta } from "@/components/painel/editor-metas";
 import { SeletorMes } from "@/components/painel/seletor-mes";
 import { Bloco } from "@/components/painel/ui";
@@ -37,6 +37,8 @@ export default async function MetasPage({ searchParams }: { searchParams: Promis
   const anteriores = doMes(mesAnterior ?? "");
 
   // Ativos, mais inativos que já tenham meta neste mês (para não sumir com um valor salvo)
+  const valores = (m: MetaIndividualP | undefined) =>
+    m ? { mrr: m.meta_mrr, naoRecorrente: m.meta_nao_recorrente, reunioes: m.meta_reunioes } : null;
   const pessoas: PessoaMeta[] = dados.pessoas
     .filter((p) => p.papel !== "Operacional" && (p.ativo || atuais.has(p.id)))
     .map((p) => ({
@@ -44,10 +46,8 @@ export default async function MetasPage({ searchParams }: { searchParams: Promis
       nome: p.nome,
       papel: p.papel as "Closer" | "SDR",
       ativo: p.ativo,
-      metaValor: atuais.get(p.id)?.meta_valor ?? null,
-      metaReunioes: atuais.get(p.id)?.meta_reunioes ?? null,
-      anteriorValor: anteriores.get(p.id)?.meta_valor ?? null,
-      anteriorReunioes: anteriores.get(p.id)?.meta_reunioes ?? null,
+      atual: valores(atuais.get(p.id)),
+      anterior: valores(anteriores.get(p.id)),
     }));
 
   const global = dados.metas.find((m) => m.mes === mes);

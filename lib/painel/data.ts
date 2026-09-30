@@ -33,6 +33,9 @@ async function paginar(buscar: (de: number, ate: number) => PromiseLike<Resposta
 }
 
 function mensagemAmigavel(tabela: Tabela, erro: string): string {
+  if (tabela === "metas_individuais" && /meta_mrr|meta_nao_recorrente/.test(erro)) {
+    return "Faltam as colunas de meta MRR / não recorrente por closer. Rode o arquivo supabase/003_metas_closer_mrr_nr.sql no SQL Editor do Supabase.";
+  }
   if (/does not exist|schema cache|could not find/i.test(erro) && (tabela === "metas_individuais" || tabela === "reunioes")) {
     return `A tabela ${tabela} ainda não existe. Rode o arquivo supabase/002_painel.sql no SQL Editor do Supabase.`;
   }
@@ -63,7 +66,7 @@ export async function getPainelDados(): Promise<CargaPainel> {
     paginar((de, ate) =>
       sb
         .from("metas_individuais")
-        .select("id,mes,pessoa_id,meta_valor,meta_reunioes")
+        .select("id,mes,pessoa_id,meta_mrr,meta_nao_recorrente,meta_reunioes")
         .gte("mes", `${ANO}-01`)
         .lte("mes", `${ANO}-12`)
         .order("id")
@@ -115,7 +118,8 @@ export async function getPainelDados(): Promise<CargaPainel> {
         (m): MetaIndividualP => ({
           mes: String(m.mes),
           pessoa_id: String(m.pessoa_id),
-          meta_valor: num(m.meta_valor),
+          meta_mrr: num(m.meta_mrr),
+          meta_nao_recorrente: num(m.meta_nao_recorrente),
           meta_reunioes: num(m.meta_reunioes),
         }),
       ),

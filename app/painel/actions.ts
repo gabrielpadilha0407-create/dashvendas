@@ -18,7 +18,7 @@ export type MetasDoMes = {
   mes: string;
   metaMrr: number;
   metaNaoRecorrente: number;
-  individuais: { pessoaId: string; metaValor: number; metaReunioes: number }[];
+  individuais: { pessoaId: string; metaMrr: number; metaNaoRecorrente: number; metaReunioes: number }[];
 };
 
 const valido = (n: number) => Number.isFinite(n) && n >= 0;
@@ -27,7 +27,7 @@ export async function salvarMetas(dados: MetasDoMes): Promise<ResultadoAcao> {
   if (!MESES.includes(dados.mes)) return { error: "Mês inválido." };
   if (!valido(dados.metaMrr) || !valido(dados.metaNaoRecorrente)) return { error: "Meta global inválida." };
   for (const i of dados.individuais) {
-    if (!valido(i.metaValor) || !valido(i.metaReunioes) || !Number.isInteger(i.metaReunioes)) {
+    if (!valido(i.metaMrr) || !valido(i.metaNaoRecorrente) || !valido(i.metaReunioes) || !Number.isInteger(i.metaReunioes)) {
       return { error: "Há uma meta individual inválida. Use números positivos (reuniões sem casas decimais)." };
     }
   }
@@ -46,7 +46,9 @@ export async function salvarMetas(dados: MetasDoMes): Promise<ResultadoAcao> {
       dados.individuais.map((i) => ({
         mes: dados.mes,
         pessoa_id: i.pessoaId,
-        meta_valor: i.metaValor,
+        meta_mrr: i.metaMrr,
+        meta_nao_recorrente: i.metaNaoRecorrente,
+        meta_valor: i.metaMrr + i.metaNaoRecorrente,
         meta_reunioes: i.metaReunioes,
       })),
       { onConflict: "mes,pessoa_id" },
