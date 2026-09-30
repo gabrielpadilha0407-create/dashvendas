@@ -67,6 +67,23 @@ Compartilhe a URL gerada com o time junto com a senha de equipe.
 - **metas**: uma linha por mês (`YYYY-MM`); ao navegar para um mês sem meta, o app
   cria automaticamente uma linha zerada.
 
+## Painel Comercial 2026 (`/painel`)
+
+Tela única para TV e celular com meta × realizado do mês, ranking de closers e SDRs e visão do ano.
+Usa as mesmas pessoas e vendas lançadas no dashboard e a mesma senha de equipe.
+
+- **Instalação (uma vez):** rode [`supabase/002_painel.sql`](supabase/002_painel.sql) no SQL Editor do Supabase.
+  Ele cria as tabelas `metas_individuais` e `reunioes`.
+- **`/painel`:** visão TV. Relê os dados a cada 5 minutos; o botão Atualizar força a leitura.
+- **`/painel/metas`:** meta global do mês (MRR e não recorrente) e meta de cada pessoa —
+  closer em R$ de aquisição, SDR em número de reuniões realizadas. Botão para copiar do mês anterior.
+- **`/painel/reunioes`:** lançamento das reuniões dos SDRs (realizada, no-show, remarcada).
+- **Regras:** aquisição = MRR + não recorrente; o setup de uma venda MRR conta como não recorrente;
+  Monetização não entra no painel. Ritmo necessário = quanto falta ÷ dias úteis restantes (contando hoje),
+  descontando os feriados de [`lib/painel/feriados.ts`](lib/painel/feriados.ts).
+- **Adicionar ou remover alguém:** em Configurações, como já é hoje. Inativos somem do painel,
+  exceto nos meses em que tiverem venda, reunião ou meta.
+
 ## Fora de escopo nesta versão
 
 Integração com CRM, notificações de meta batida, e exportação de relatórios em

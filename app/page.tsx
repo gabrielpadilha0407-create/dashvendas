@@ -32,6 +32,12 @@ export default async function DashboardPage({
           </div>
           <div className="flex items-center gap-4">
             <Link
+              href="/painel"
+              className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Painel 2026
+            </Link>
+            <Link
               href="/configuracoes"
               className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
