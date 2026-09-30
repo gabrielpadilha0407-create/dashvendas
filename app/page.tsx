@@ -35,7 +35,7 @@ export default async function DashboardPage({
               href="/painel"
               className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
-              Painel 2026
+              Painel comercial
             </Link>
             <Link
               href="/configuracoes"

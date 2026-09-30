@@ -81,7 +81,8 @@ Usa as mesmas pessoas e vendas lançadas no dashboard e a mesma senha de equipe.
 - **`/painel/reunioes`:** lançamento das reuniões dos SDRs (realizada, no-show, remarcada).
 - **Regras:** aquisição = MRR + não recorrente; o setup de uma venda MRR conta como não recorrente;
   Monetização não entra no painel. Ritmo necessário = quanto falta ÷ dias úteis restantes (contando hoje),
-  descontando os feriados de [`lib/painel/feriados.ts`](lib/painel/feriados.ts).
+  descontando os feriados de [`lib/painel/feriados.ts`](lib/painel/feriados.ts) (calculados para qualquer ano).
+- **Ano:** o seletor vai de 2026 até o ano seguinte ao atual; na virada do ano o painel abre sozinho no ano novo.
 - **Adicionar ou remover alguém:** em Configurações, como já é hoje. Inativos somem do painel,
   exceto nos meses em que tiverem venda, reunião ou meta.
 

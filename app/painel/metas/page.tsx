@@ -1,5 +1,13 @@
 import { getPainelDados } from "@/lib/painel/data";
-import { MESES, hojeSP, resolverMes, type MetaIndividualP } from "@/lib/painel/calc";
+import {
+  ANO_INICIAL,
+  anoDe,
+  anosDisponiveis,
+  hojeSP,
+  mesAnterior as anteriorDe,
+  resolverMes,
+  type MetaIndividualP,
+} from "@/lib/painel/calc";
 import { EditorMetas, type PessoaMeta } from "@/components/painel/editor-metas";
 import { SeletorMes } from "@/components/painel/seletor-mes";
 import { Bloco } from "@/components/painel/ui";
@@ -8,16 +16,18 @@ export const dynamic = "force-dynamic";
 
 export default async function MetasPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
   const params = await searchParams;
-  const mes = resolverMes(params.mes, hojeSP());
-  const idx = MESES.indexOf(mes);
-  const mesAnterior = idx > 0 ? MESES[idx - 1] : null;
-  const { dados, erros } = await getPainelDados();
+  const hoje = hojeSP();
+  const anos = anosDisponiveis(hoje);
+  const mes = resolverMes(params.mes, hoje);
+  const anterior = anteriorDe(mes);
+  const mesAnterior = anoDe(anterior) >= ANO_INICIAL ? anterior : null;
+  const { dados, erros } = await getPainelDados(anoDe(mes));
 
   const bloqueantes = erros.filter((e) => ["pessoas", "metas", "metas_individuais"].includes(e.tabela));
   if (bloqueantes.length > 0) {
     return (
       <>
-        <SeletorMes mes={mes} />
+        <SeletorMes mes={mes} anos={anos} />
         <div role="alert" className="rounded-lg border border-destructive/60 bg-destructive/10 px-4 py-3 text-sm">
           <p className="font-semibold">Não foi possível abrir as metas:</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-5">
@@ -56,7 +66,7 @@ export default async function MetasPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <SeletorMes mes={mes} />
+        <SeletorMes mes={mes} anos={anos} />
         <p className="text-sm text-muted-foreground">As alterações aparecem no painel assim que você salvar.</p>
       </div>
       <Bloco>

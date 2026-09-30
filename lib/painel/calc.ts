@@ -1,8 +1,24 @@
-// Regras de cálculo do Painel Comercial 2026. Funções puras, sem acesso ao banco.
-import { FERIADOS_2026 } from "./feriados";
+// Regras de cálculo do Painel Comercial. Funções puras, sem acesso ao banco.
+import { feriadosDoAno } from "./feriados";
 
-export const ANO = "2026";
-export const MESES = Array.from({ length: 12 }, (_, i) => `${ANO}-${String(i + 1).padStart(2, "0")}`);
+/** Primeiro ano com dados no painel. */
+export const ANO_INICIAL = 2026;
+
+export const mesesDoAno = (ano: number) => Array.from({ length: 12 }, (_, i) => `${ano}-${String(i + 1).padStart(2, "0")}`);
+
+export const anoDe = (mes: string) => Number(mes.slice(0, 4));
+
+/** Anos que aparecem no seletor: de 2026 até o ano seguinte ao atual. */
+export function anosDisponiveis(hoje: string): number[] {
+  const ultimo = Math.max(anoDe(hoje) + 1, ANO_INICIAL);
+  return Array.from({ length: ultimo - ANO_INICIAL + 1 }, (_, i) => ANO_INICIAL + i);
+}
+
+/** Mês anterior no formato AAAA-MM (atravessa a virada do ano). */
+export function mesAnterior(mes: string): string {
+  const [a, m] = mes.split("-").map(Number);
+  return m === 1 ? `${a - 1}-12` : `${a}-${String(m - 1).padStart(2, "0")}`;
+}
 
 export type StatusReuniao = "realizada" | "no_show" | "remarcada";
 export const STATUS_REUNIAO: { valor: StatusReuniao; rotulo: string }[] = [
@@ -55,15 +71,23 @@ export function hojeSP(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 }
 
-/** Mês da URL, se válido; senão o mês atual (limitado a 2026). */
+/** Mês da URL, se válido e dentro dos anos disponíveis; senão o mês atual. */
 export function resolverMes(param: string | undefined, hoje: string): string {
-  if (param && MESES.includes(param)) return param;
-  if (hoje < `${ANO}-01-01`) return MESES[0];
-  if (hoje > `${ANO}-12-31`) return MESES[11];
-  return hoje.slice(0, 7);
+  const anos = anosDisponiveis(hoje);
+  if (param && /^\d{4}-(0[1-9]|1[0-2])$/.test(param) && anos.includes(anoDe(param))) return param;
+  const atual = hoje.slice(0, 7);
+  return anoDe(atual) < ANO_INICIAL ? `${ANO_INICIAL}-01` : atual;
 }
 
-const FERIADOS = new Set(FERIADOS_2026.map((f) => f.data));
+const cacheFeriados = new Map<number, Set<string>>();
+function feriados(ano: number): Set<string> {
+  let s = cacheFeriados.get(ano);
+  if (!s) {
+    s = new Set(feriadosDoAno(ano).map((f) => f.data));
+    cacheFeriados.set(ano, s);
+  }
+  return s;
+}
 
 function fimDoMes(mes: string): string {
   const [a, m] = mes.split("-").map(Number);
@@ -78,10 +102,11 @@ export function diasUteisRestantes(mes: string, hoje: string): number {
   if (de > fim) return 0;
   const [a, m, d] = de.split("-").map(Number);
   const cursor = new Date(Date.UTC(a, m - 1, d));
+  const folgas = feriados(anoDe(mes));
   let n = 0;
   for (let s = cursor.toISOString().slice(0, 10); s <= fim; s = cursor.toISOString().slice(0, 10)) {
     const dia = cursor.getUTCDay();
-    if (dia !== 0 && dia !== 6 && !FERIADOS.has(s)) n++;
+    if (dia !== 0 && dia !== 6 && !folgas.has(s)) n++;
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return n;
@@ -278,9 +303,10 @@ export type LinhaAno = {
   status: StatusMes;
 };
 
-export function visaoAno(d: PainelDados, mesAtual: string): LinhaAno[] {
+/** Os 12 meses do ano escolhido; `mesAtual` (mês de hoje) define o que é passado, em andamento ou futuro. */
+export function visaoAno(d: PainelDados, ano: number, mesAtual: string): LinhaAno[] {
   let acumulado = 0;
-  return MESES.map((mes) => {
+  return mesesDoAno(ano).map((mes) => {
     const r = resumir(d.vendas.filter((v) => doMes(v.data, mes)));
     acumulado += r.mrr;
     const m = metaGlobal(d, mes);

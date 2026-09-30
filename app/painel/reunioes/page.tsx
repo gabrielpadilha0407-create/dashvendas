@@ -1,5 +1,5 @@
 import { getPainelDados } from "@/lib/painel/data";
-import { hojeSP, resolverMes } from "@/lib/painel/calc";
+import { anoDe, anosDisponiveis, hojeSP, resolverMes } from "@/lib/painel/calc";
 import { FormReuniao, ListaReunioes } from "@/components/painel/reunioes";
 import { SeletorMes } from "@/components/painel/seletor-mes";
 import { Bloco } from "@/components/painel/ui";
@@ -10,7 +10,7 @@ export default async function ReunioesPage({ searchParams }: { searchParams: Pro
   const params = await searchParams;
   const hoje = hojeSP();
   const mes = resolverMes(params.mes, hoje);
-  const { dados, erros } = await getPainelDados();
+  const { dados, erros } = await getPainelDados(anoDe(mes));
 
   const bloqueantes = erros.filter((e) => e.tabela === "pessoas" || e.tabela === "reunioes");
   if (bloqueantes.length > 0) {
@@ -38,7 +38,7 @@ export default async function ReunioesPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <SeletorMes mes={mes} />
+        <SeletorMes mes={mes} anos={anosDisponiveis(hoje)} />
       </div>
       <Bloco titulo="Lançar reunião">
         <FormReuniao sdrs={sdrs} closers={closers} dataPadrao={dataPadrao} />

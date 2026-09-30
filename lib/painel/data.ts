@@ -1,7 +1,6 @@
 import "server-only";
 import { supabaseServer } from "@/lib/supabase/server";
 import {
-  ANO,
   type MetaGlobalP,
   type MetaIndividualP,
   type PainelDados,
@@ -44,10 +43,13 @@ function mensagemAmigavel(tabela: Tabela, erro: string): string {
 
 const num = (v: unknown) => Number(v ?? 0) || 0;
 
-export async function getPainelDados(): Promise<CargaPainel> {
+/** Dados do ano escolhido, mais dezembro do ano anterior (para "copiar metas do mês anterior" em janeiro). */
+export async function getPainelDados(ano: number): Promise<CargaPainel> {
   const sb = supabaseServer();
-  const inicio = `${ANO}-01-01`;
-  const fim = `${ANO}-12-31`;
+  const inicio = `${ano - 1}-12-01`;
+  const fim = `${ano}-12-31`;
+  const mesInicio = `${ano - 1}-12`;
+  const mesFim = `${ano}-12`;
 
   const [pessoas, vendas, metas, metasInd, reunioes] = await Promise.all([
     paginar((de, ate) => sb.from("pessoas").select("id,nome,papel,ativo").order("nome").range(de, ate)),
@@ -61,14 +63,14 @@ export async function getPainelDados(): Promise<CargaPainel> {
         .range(de, ate),
     ),
     paginar((de, ate) =>
-      sb.from("metas").select("mes,meta_mrr,meta_nao_recorrente").gte("mes", `${ANO}-01`).lte("mes", `${ANO}-12`).range(de, ate),
+      sb.from("metas").select("mes,meta_mrr,meta_nao_recorrente").gte("mes", mesInicio).lte("mes", mesFim).range(de, ate),
     ),
     paginar((de, ate) =>
       sb
         .from("metas_individuais")
         .select("id,mes,pessoa_id,meta_mrr,meta_nao_recorrente,meta_reunioes")
-        .gte("mes", `${ANO}-01`)
-        .lte("mes", `${ANO}-12`)
+        .gte("mes", mesInicio)
+        .lte("mes", mesFim)
         .order("id")
         .range(de, ate),
     ),

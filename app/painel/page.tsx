@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getPainelDados, type Tabela } from "@/lib/painel/data";
-import { hojeSP, pendencias, resolverMes } from "@/lib/painel/calc";
+import { anoDe, anosDisponiveis, hojeSP, pendencias, resolverMes } from "@/lib/painel/calc";
 import { Atualizar } from "@/components/painel/atualizar";
 import { CartoesMetas } from "@/components/painel/cartoes-metas";
 import { RankingClosers } from "@/components/painel/ranking-closers";
@@ -14,9 +14,10 @@ export const dynamic = "force-dynamic";
 export default async function PainelPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
   const params = await searchParams;
   const hoje = hojeSP();
-  const mesAtual = resolverMes(undefined, hoje);
+  const mesAtual = hoje.slice(0, 7);
   const mes = resolverMes(params.mes, hoje);
-  const { dados, erros } = await getPainelDados();
+  const ano = anoDe(mes);
+  const { dados, erros } = await getPainelDados(ano);
   const geradoEm = new Date().toISOString();
 
   const falhou = new Set<Tabela>(erros.map((e) => e.tabela));
@@ -38,7 +39,7 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <SeletorMes mes={mes} />
+          <SeletorMes mes={mes} anos={anosDisponiveis(hoje)} />
         </div>
         <Atualizar geradoEm={geradoEm} />
       </div>

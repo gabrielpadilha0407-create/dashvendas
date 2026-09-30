@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { faixaDe, visaoAno, type LinhaAno, type PainelDados, type StatusMes } from "@/lib/painel/calc";
+import { anoDe, faixaDe, visaoAno, type LinhaAno, type PainelDados, type StatusMes } from "@/lib/painel/calc";
 import { brl, brlCurto, nomeMes, nomeMesCurto, pct } from "@/lib/painel/formato";
 import { cn } from "@/lib/utils";
 import { Bloco, SeloFaixa } from "./ui";
@@ -121,7 +121,7 @@ function GraficoMetaRealizado({ linhas }: { linhas: LinhaAno[] }) {
   );
 }
 
-function GraficoMrr({ linhas }: { linhas: LinhaAno[] }) {
+function GraficoMrr({ linhas, ano }: { linhas: LinhaAno[]; ano: number }) {
   const pontos = linhas
     .map((l, i) => ({ l, i }))
     .filter((p): p is { l: LinhaAno & { mrrAcumulado: number }; i: number } => p.l.mrrAcumulado !== null);
@@ -131,7 +131,7 @@ function GraficoMrr({ linhas }: { linhas: LinhaAno[] }) {
   const y = (v: number) => T + PH - (v / teto) * PH;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="MRR acumulado em 2026">
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`MRR acumulado em ${ano}`}>
       <Eixos teto={teto} />
       {pontos.length > 1 && (
         <polyline
@@ -168,13 +168,14 @@ function GraficoMrr({ linhas }: { linhas: LinhaAno[] }) {
 }
 
 export function VisaoAno({ dados, mesAtual, mesSelecionado }: { dados: PainelDados; mesAtual: string; mesSelecionado: string }) {
-  const linhas = visaoAno(dados, mesAtual);
+  const ano = anoDe(mesSelecionado);
+  const linhas = visaoAno(dados, ano, mesAtual);
 
   return (
-    <Bloco titulo="Visão do ano">
+    <Bloco titulo={`Visão do ano ${ano}`}>
       <div className="grid gap-6 lg:grid-cols-2">
         <div>
-          <h3 className="mb-1 text-sm font-semibold text-muted-foreground">Aquisição total — meta × realizado</h3>
+          <h3 className="mb-1 text-sm font-semibold text-muted-foreground">Aquisição total {ano} — meta × realizado</h3>
           <Legenda
             itens={[
               { cor: COR_META, rotulo: "Meta" },
@@ -184,9 +185,9 @@ export function VisaoAno({ dados, mesAtual, mesSelecionado }: { dados: PainelDad
           <GraficoMetaRealizado linhas={linhas} />
         </div>
         <div>
-          <h3 className="mb-1 text-sm font-semibold text-muted-foreground">MRR acumulado em 2026</h3>
+          <h3 className="mb-1 text-sm font-semibold text-muted-foreground">MRR acumulado em {ano}</h3>
           <div className="mb-2 h-5" />
-          <GraficoMrr linhas={linhas} />
+          <GraficoMrr linhas={linhas} ano={ano} />
         </div>
       </div>
 

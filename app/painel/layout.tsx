@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { NavPainel } from "@/components/painel/nav";
 
 export const metadata: Metadata = {
-  title: "Painel Comercial QH4 2026",
+  title: "Painel Comercial QH4",
 };
 
 export default function PainelLayout({ children }: { children: React.ReactNode }) {
@@ -13,7 +13,7 @@ export default function PainelLayout({ children }: { children: React.ReactNode }
         <div className="mx-auto flex max-w-[1920px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <span className="rounded-md bg-foreground px-2.5 py-1 text-lg font-bold tracking-tight text-background">QH4</span>
-            <span className="text-xl font-semibold tracking-tight sm:text-2xl">Painel Comercial 2026</span>
+            <span className="text-xl font-semibold tracking-tight sm:text-2xl">Painel Comercial</span>
           </div>
           <Suspense fallback={null}>
             <NavPainel />

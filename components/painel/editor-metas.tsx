@@ -141,7 +141,7 @@ export function EditorMetas(props: Props) {
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold tracking-tight">Metas de {nomeMes(mes)} 2026</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Metas de {nomeMes(mes)} {mes.slice(0, 4)}</h2>
         {mesAnterior && temAnterior && (
           <Button variant="outline" onClick={copiarAnterior} disabled={salvando}>
             Copiar metas de {nomeMes(mesAnterior)}

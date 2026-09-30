@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase/server";
-import { MESES, type StatusReuniao } from "@/lib/painel/calc";
+import { ANO_INICIAL, anoDe, type StatusReuniao } from "@/lib/painel/calc";
 
 export type ResultadoAcao = { error: string | null; enviadoEm?: number };
 
@@ -24,7 +24,7 @@ export type MetasDoMes = {
 const valido = (n: number) => Number.isFinite(n) && n >= 0;
 
 export async function salvarMetas(dados: MetasDoMes): Promise<ResultadoAcao> {
-  if (!MESES.includes(dados.mes)) return { error: "Mês inválido." };
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(dados.mes) || anoDe(dados.mes) < ANO_INICIAL) return { error: "Mês inválido." };
   if (!valido(dados.metaMrr) || !valido(dados.metaNaoRecorrente)) return { error: "Meta global inválida." };
   for (const i of dados.individuais) {
     if (!valido(i.metaMrr) || !valido(i.metaNaoRecorrente) || !valido(i.metaReunioes) || !Number.isInteger(i.metaReunioes)) {
