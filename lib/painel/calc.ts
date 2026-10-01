@@ -45,6 +45,10 @@ export type MetaIndividualP = {
   meta_reunioes: number;
 };
 
+/** Super meta de MRR do closer: 10% acima da meta. Mude aqui se o percentual mudar. */
+export const SUPER_META_FATOR = 1.1;
+export const superMeta = (meta: number) => Math.round(meta * SUPER_META_FATOR * 100) / 100; // em centavos, sem erro de ponto flutuante
+
 /** Meta total do closer = MRR + não recorrente. */
 export const metaTotalCloser = (m: MetaIndividualP | undefined) => (m ? m.meta_mrr + m.meta_nao_recorrente : 0);
 export type ReuniaoP = {

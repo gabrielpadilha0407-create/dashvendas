@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { faixaDe, metaDiaria, metaGlobal, rankingClosers, type PainelDados } from "@/lib/painel/calc";
+import { faixaDe, metaDiaria, metaGlobal, rankingClosers, superMeta, type PainelDados } from "@/lib/painel/calc";
 import { brl, brlCurto, inteiro, pct } from "@/lib/painel/formato";
 import { cn } from "@/lib/utils";
 import { Barra, Bloco, SeloFaixa, td, th } from "./ui";
@@ -11,8 +11,49 @@ function Falta({ realizado, meta, className }: { realizado: number; meta: number
   return <span className={className}>{brl(meta - realizado)}</span>;
 }
 
+/** Super meta de MRR do closer: valor e quanto falta, ou "Super meta batida". */
+function SuperMeta({ realizado, meta }: { realizado: number; meta: number }) {
+  if (meta <= 0) return <span className="text-muted-foreground">—</span>;
+  const alvo = superMeta(meta);
+  const batida = realizado >= alvo;
+  return (
+    <div className="flex flex-col items-end">
+      <span className="whitespace-nowrap text-sm text-muted-foreground">{brl(alvo)}</span>
+      {batida ? (
+        <span className="whitespace-nowrap rounded border border-[#fab219]/60 px-1.5 py-0.5 text-sm font-semibold text-[#fab219]">
+          Super meta batida
+        </span>
+      ) : (
+        <span className="whitespace-nowrap font-semibold">falta {brl(alvo - realizado)}</span>
+      )}
+    </div>
+  );
+}
+
 /** Realizado / meta com mini barra de progresso e quanto falta, para as colunas de MRR e não recorrente. */
-function Parcial({ realizado, meta, p }: { realizado: number; meta: number; p: number | null }) {
+function Parcial({
+  realizado,
+  meta,
+  p,
+  comSuperMeta = false,
+}: {
+  realizado: number;
+  meta: number;
+  p: number | null;
+  comSuperMeta?: boolean;
+}) {
+  // Depois de bater a meta de MRR, a linha de baixo passa a mostrar a super meta
+  const alvoSuper = superMeta(meta);
+  const linhaFalta =
+    realizado < meta ? (
+      <>falta {brl(meta - realizado)}</>
+    ) : comSuperMeta && realizado < alvoSuper ? (
+      <span className="text-[#3fd13f]">batida · falta {brl(alvoSuper - realizado)} p/ super meta</span>
+    ) : comSuperMeta ? (
+      <span className="text-[#fab219]">Super meta batida</span>
+    ) : (
+      <Falta realizado={realizado} meta={meta} />
+    );
   return (
     <div className="flex flex-col items-end gap-1">
       <span className="whitespace-nowrap">
@@ -24,9 +65,7 @@ function Parcial({ realizado, meta, p }: { realizado: number; meta: number; p: n
         <Barra pct={p} faixa={faixaDe(p)} />
       </div>
       {meta > 0 && (
-        <span className="whitespace-nowrap text-xs text-muted-foreground">
-          {realizado >= meta ? <Falta realizado={realizado} meta={meta} /> : <>falta {brl(meta - realizado)}</>}
-        </span>
+        <span className="whitespace-nowrap text-xs text-muted-foreground">{linhaFalta}</span>
       )}
     </div>
   );
@@ -65,7 +104,7 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
         <p className="text-muted-foreground">Nenhum closer ativo ou com vendas neste mês.</p>
       ) : (
         <div className="-mx-3 overflow-x-auto">
-          <table className="w-full min-w-[1180px] border-collapse">
+          <table className="w-full min-w-[1320px] border-collapse">
             <thead>
               <tr className="border-b border-border">
                 <th className={th}>#</th>
@@ -75,6 +114,7 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
                 <th className={cn(th, "text-right")}>Falta</th>
                 <th className={cn(th, "text-right")}>Meta diária</th>
                 <th className={cn(th, "text-right")}>MRR</th>
+                <th className={cn(th, "text-right")}>Super meta MRR (+10%)</th>
                 <th className={cn(th, "text-right")}>Não recorrente</th>
                 <th className={cn(th, "text-right")}>Vendas</th>
                 <th className={cn(th, "text-right")}>Ticket médio</th>
@@ -116,7 +156,10 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
                       />
                     </td>
                     <td className={td}>
-                      <Parcial realizado={l.mrr} meta={l.metaMrr} p={l.pctMrr} />
+                      <Parcial realizado={l.mrr} meta={l.metaMrr} p={l.pctMrr} comSuperMeta />
+                    </td>
+                    <td className={cn(td, "text-right")}>
+                      <SuperMeta realizado={l.mrr} meta={l.metaMrr} />
                     </td>
                     <td className={td}>
                       <Parcial realizado={l.naoRecorrente} meta={l.metaNaoRecorrente} p={l.pctNaoRecorrente} />
@@ -149,6 +192,9 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
                 <td className={cn(td, "whitespace-nowrap text-right")}>
                   <span className="font-semibold">{brl(totalMrr)}</span>
                   <span className="text-sm text-muted-foreground"> / {brlCurto(somaMetas.mrr)}</span>
+                </td>
+                <td className={cn(td, "whitespace-nowrap text-right text-sm text-muted-foreground")}>
+                  {somaMetas.mrr > 0 ? brl(superMeta(somaMetas.mrr)) : "—"}
                 </td>
                 <td className={cn(td, "whitespace-nowrap text-right")}>
                   <span className="font-semibold">{brl(totalNr)}</span>
