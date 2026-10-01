@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { faixaDe, rankingSdrs, type PainelDados } from "@/lib/painel/calc";
-import { brl, inteiro, pct } from "@/lib/painel/formato";
+import { faixaDe, metaDiaria, rankingSdrs, type PainelDados } from "@/lib/painel/calc";
+import { brl, inteiro, pct, reunioesPorDia } from "@/lib/painel/formato";
 import { cn } from "@/lib/utils";
 import { Barra, Bloco, td, th } from "./ui";
 
@@ -13,7 +13,7 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
         <p className="text-muted-foreground">Nenhum SDR ativo ou com vendas neste mês.</p>
       ) : (
         <div className="-mx-3 overflow-x-auto">
-          <table className="w-full min-w-[860px] border-collapse">
+          <table className="w-full min-w-[980px] border-collapse">
             <thead>
               <tr className="border-b border-border">
                 <th className={th}>#</th>
@@ -21,6 +21,7 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
                 <th className={cn(th, "text-right")}>Reuniões / meta</th>
                 <th className={cn(th, "w-40")}>% da meta</th>
                 <th className={cn(th, "text-right")}>Faltam</th>
+                <th className={cn(th, "text-right")}>Meta diária</th>
                 <th className={cn(th, "text-right")}>Vendas</th>
                 <th className={cn(th, "text-right")}>Receita originada</th>
                 <th className={cn(th, "text-right")}>Conversão</th>
@@ -60,6 +61,9 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
                         `${inteiro(l.metaReunioes - l.realizadas)} ${l.metaReunioes - l.realizadas === 1 ? "reunião" : "reuniões"}`
                       )}
                     </td>
+                    <td className={cn(td, "whitespace-nowrap text-right font-semibold")}>
+                      {reunioesPorDia(metaDiaria(l.metaReunioes ?? 0, mes))}
+                    </td>
                     <td className={cn(td, "text-right")}>{inteiro(l.vendas)}</td>
                     <td className={cn(td, "text-right font-semibold")}>{brl(l.receita)}</td>
                     <td className={cn(td, "text-right")}>{pct(l.conversao)}</td>
@@ -77,6 +81,9 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
                 <td className={td} />
                 <td className={cn(td, "whitespace-nowrap text-right font-semibold")}>
                   {inteiro(linhas.reduce((s, l) => s + Math.max(0, (l.metaReunioes ?? 0) - l.realizadas), 0))}
+                </td>
+                <td className={cn(td, "whitespace-nowrap text-right font-semibold")}>
+                  {reunioesPorDia(metaDiaria(somaMetas, mes))}
                 </td>
                 <td colSpan={3} />
               </tr>

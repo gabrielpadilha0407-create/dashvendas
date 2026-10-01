@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { faixaDe, metaGlobal, rankingClosers, type PainelDados } from "@/lib/painel/calc";
+import { faixaDe, metaDiaria, metaGlobal, rankingClosers, type PainelDados } from "@/lib/painel/calc";
 import { brl, brlCurto, inteiro, pct } from "@/lib/painel/formato";
 import { cn } from "@/lib/utils";
 import { Barra, Bloco, SeloFaixa, td, th } from "./ui";
@@ -32,6 +32,18 @@ function Parcial({ realizado, meta, p }: { realizado: number; meta: number; p: n
   );
 }
 
+/** Meta diária total, com MRR e não recorrente embaixo. */
+function Diaria({ total, mrr, nr }: { total: number | null; mrr: number | null; nr: number | null }) {
+  if (total === null) return <span className="text-muted-foreground">—</span>;
+  return (
+    <div className="flex flex-col items-end">
+      <span className="whitespace-nowrap font-semibold">{brl(total)}</span>
+      <span className="whitespace-nowrap text-xs text-muted-foreground">MRR {mrr === null ? "—" : brl(mrr)}</span>
+      <span className="whitespace-nowrap text-xs text-muted-foreground">Não rec. {nr === null ? "—" : brl(nr)}</span>
+    </div>
+  );
+}
+
 export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string }) {
   const { linhas, somaMetas } = rankingClosers(dados, mes);
   const global = metaGlobal(dados, mes);
@@ -53,7 +65,7 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
         <p className="text-muted-foreground">Nenhum closer ativo ou com vendas neste mês.</p>
       ) : (
         <div className="-mx-3 overflow-x-auto">
-          <table className="w-full min-w-[1060px] border-collapse">
+          <table className="w-full min-w-[1180px] border-collapse">
             <thead>
               <tr className="border-b border-border">
                 <th className={th}>#</th>
@@ -61,6 +73,7 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
                 <th className={cn(th, "text-right")}>Realizado / meta</th>
                 <th className={cn(th, "w-40")}>% da meta</th>
                 <th className={cn(th, "text-right")}>Falta</th>
+                <th className={cn(th, "text-right")}>Meta diária</th>
                 <th className={cn(th, "text-right")}>MRR</th>
                 <th className={cn(th, "text-right")}>Não recorrente</th>
                 <th className={cn(th, "text-right")}>Vendas</th>
@@ -96,6 +109,13 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
                       <Falta realizado={l.realizado} meta={l.meta ?? 0} />
                     </td>
                     <td className={td}>
+                      <Diaria
+                        total={metaDiaria(l.meta ?? 0, mes)}
+                        mrr={metaDiaria(l.metaMrr, mes)}
+                        nr={metaDiaria(l.metaNaoRecorrente, mes)}
+                      />
+                    </td>
+                    <td className={td}>
                       <Parcial realizado={l.mrr} meta={l.metaMrr} p={l.pctMrr} />
                     </td>
                     <td className={td}>
@@ -118,6 +138,13 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
                 <td className={td} />
                 <td className={cn(td, "whitespace-nowrap text-right font-semibold")}>
                   {brl(linhas.reduce((s, l) => s + Math.max(0, (l.meta ?? 0) - l.realizado), 0))}
+                </td>
+                <td className={td}>
+                  <Diaria
+                    total={metaDiaria(somaMetas.total, mes)}
+                    mrr={metaDiaria(somaMetas.mrr, mes)}
+                    nr={metaDiaria(somaMetas.naoRecorrente, mes)}
+                  />
                 </td>
                 <td className={cn(td, "whitespace-nowrap text-right")}>
                   <span className="font-semibold">{brl(totalMrr)}</span>

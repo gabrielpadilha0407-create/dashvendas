@@ -4,8 +4,8 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { salvarMetas, type MetasDoMes } from "@/app/painel/actions";
-import { parseValor } from "@/lib/painel/calc";
-import { brl, nomeMes } from "@/lib/painel/formato";
+import { diasUteisDoMes, metaDiaria, parseValor } from "@/lib/painel/calc";
+import { brl, nomeMes, reunioesPorDia } from "@/lib/painel/formato";
 
 type Valores = { mrr: number; naoRecorrente: number; reunioes: number };
 
@@ -63,6 +63,11 @@ export function EditorMetas(props: Props) {
   const numNaoRec = parseValor(naoRec);
   const somaMrr = closers.reduce((s, p) => s + valor(chave(p.id, "mrr")), 0);
   const somaNr = closers.reduce((s, p) => s + valor(chave(p.id, "nr")), 0);
+  const diasMes = diasUteisDoMes(mes);
+  const porDia = (v: number) => {
+    const d = metaDiaria(v, mes);
+    return d === null ? "" : `${brl(d)} por dia`;
+  };
 
   const alterar = (k: string, v: string) => {
     setCampos((atual) => ({ ...atual, [k]: v }));
@@ -142,6 +147,9 @@ export function EditorMetas(props: Props) {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold tracking-tight">Metas de {nomeMes(mes)} {mes.slice(0, 4)}</h2>
+        <p className="order-last w-full text-sm text-muted-foreground">
+          {diasMes} dias úteis no mês (segunda a sexta, sem feriados). A meta diária é a meta do mês dividida por esses dias.
+        </p>
         {mesAnterior && temAnterior && (
           <Button variant="outline" onClick={copiarAnterior} disabled={salvando}>
             Copiar metas de {nomeMes(mesAnterior)}
@@ -167,6 +175,7 @@ export function EditorMetas(props: Props) {
               placeholder="0"
               className="h-10 text-right text-base tabular-nums"
             />
+            <p className="mt-1 text-xs tabular-nums text-muted-foreground">{porDia(numMrr ?? 0)}</p>
           </div>
           <div>
             <label htmlFor="meta-nr" className="text-sm text-muted-foreground">
@@ -183,29 +192,32 @@ export function EditorMetas(props: Props) {
               placeholder="0"
               className="h-10 text-right text-base tabular-nums"
             />
+            <p className="mt-1 text-xs tabular-nums text-muted-foreground">{porDia(numNaoRec ?? 0)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Aquisição total</p>
             <p className="flex h-10 items-center text-xl font-semibold tabular-nums">
               {brl((numMrr ?? 0) + (numNaoRec ?? 0))}
             </p>
+            <p className="mt-1 text-xs tabular-nums text-muted-foreground">{porDia((numMrr ?? 0) + (numNaoRec ?? 0))}</p>
           </div>
         </div>
       </section>
 
-      <section className="max-w-3xl">
+      <section className="max-w-5xl">
         <h3 className={titulo}>Closers — metas em R$</h3>
         {closers.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum closer ativo. Cadastre em Vendas → Configurações.</p>
         ) : (
           <div className="-mx-3 overflow-x-auto">
-            <table className="w-full min-w-[620px] border-collapse">
+            <table className="w-full min-w-[860px] border-collapse">
               <thead>
                 <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-3 py-2 text-left font-semibold">Closer</th>
                   <th className="px-3 py-2 text-right font-semibold">MRR</th>
                   <th className="px-3 py-2 text-right font-semibold">Não recorrente</th>
                   <th className="px-3 py-2 text-right font-semibold">Total</th>
+                  <th className="px-3 py-2 text-right font-semibold">Por dia</th>
                 </tr>
               </thead>
               <tbody>
@@ -221,6 +233,12 @@ export function EditorMetas(props: Props) {
                     <td className="px-3 py-2 text-right text-base font-semibold tabular-nums">
                       {brl(valor(chave(p.id, "mrr")) + valor(chave(p.id, "nr")))}
                     </td>
+                    <td className="px-3 py-2 text-right text-sm tabular-nums text-muted-foreground">
+                      <div>{porDia(valor(chave(p.id, "mrr")) + valor(chave(p.id, "nr"))) || "—"}</div>
+                      <div className="text-xs">
+                        MRR {porDia(valor(chave(p.id, "mrr"))) || "—"} · Não rec. {porDia(valor(chave(p.id, "nr"))) || "—"}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -230,6 +248,7 @@ export function EditorMetas(props: Props) {
                   <td className="px-3 py-2 text-right">{brl(somaMrr)}</td>
                   <td className="px-3 py-2 text-right">{brl(somaNr)}</td>
                   <td className="px-3 py-2 text-right">{brl(somaMrr + somaNr)}</td>
+                  <td className="px-3 py-2 text-right text-sm text-muted-foreground">{porDia(somaMrr + somaNr) || "—"}</td>
                 </tr>
               </tfoot>
             </table>
@@ -254,6 +273,9 @@ export function EditorMetas(props: Props) {
               <div className="flex items-center gap-2">
                 {campo(chave(p.id, "reunioes"), `Meta de reuniões de ${p.nome}`)}
                 <span className="w-16 text-sm text-muted-foreground">reuniões</span>
+                <span className="w-24 text-sm tabular-nums text-muted-foreground">
+                  {valor(chave(p.id, "reunioes")) > 0 ? reunioesPorDia(metaDiaria(valor(chave(p.id, "reunioes")), mes)) : ""}
+                </span>
               </div>
             </div>
           ))

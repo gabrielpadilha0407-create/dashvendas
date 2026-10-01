@@ -94,6 +94,15 @@ function fimDoMes(mes: string): string {
   return `${mes}-${String(new Date(Date.UTC(a, m, 0)).getUTCDate()).padStart(2, "0")}`;
 }
 
+/** Dias úteis do mês inteiro (segunda a sexta, menos feriados). */
+export const diasUteisDoMes = (mes: string) => diasUteisRestantes(mes, `${mes}-01`);
+
+/** Meta diária = meta do mês ÷ dias úteis do mês. */
+export const metaDiaria = (meta: number, mes: string) => {
+  const dias = diasUteisDoMes(mes);
+  return meta > 0 && dias > 0 ? meta / dias : null;
+};
+
 /** Dias úteis do mês a partir de hoje (inclusive). Mês passado = 0; mês futuro = todos. */
 export function diasUteisRestantes(mes: string, hoje: string): number {
   const inicio = `${mes}-01`;

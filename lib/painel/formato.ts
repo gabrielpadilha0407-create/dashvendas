@@ -7,6 +7,9 @@ const UMA_CASA = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 export const brl = (n: number) => BRL.format(Math.round(n));
 export const inteiro = (n: number) => INTEIRO.format(n);
 
+/** Reuniões por dia com uma casa: 0,6 · 1,5 · 2 */
+export const reunioesPorDia = (n: number | null) => (n === null ? "—" : `${UMA_CASA.format(n)} por dia`);
+
 /** R$ 58 mil, R$ 1,2 mi — para eixos e tabelas compactas. */
 export function brlCurto(n: number): string {
   const a = Math.abs(n);
