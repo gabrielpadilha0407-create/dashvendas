@@ -8,7 +8,7 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
   const { linhas, semSdr, somaMetas, totalRealizadas } = rankingSdrs(dados, mes);
 
   return (
-    <Bloco titulo="Ranking de SDRs" extra="por receita originada">
+    <Bloco titulo="Ranking de SDRs" extra="por MRR originado">
       {linhas.length === 0 ? (
         <p className="text-muted-foreground">Nenhum SDR ativo ou com vendas neste mês.</p>
       ) : (
@@ -23,7 +23,7 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
                 <th className={cn(th, "text-right")}>Faltam</th>
                 <th className={cn(th, "text-right")}>Meta diária</th>
                 <th className={cn(th, "text-right")}>Vendas</th>
-                <th className={cn(th, "text-right")}>Receita originada</th>
+                <th className={cn(th, "text-right")}>MRR originado</th>
                 <th className={cn(th, "text-right")}>Conversão</th>
               </tr>
             </thead>
@@ -65,7 +65,7 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
                       {reunioesPorDia(metaDiaria(l.metaReunioes ?? 0, mes))}
                     </td>
                     <td className={cn(td, "text-right")}>{inteiro(l.vendas)}</td>
-                    <td className={cn(td, "text-right font-semibold")}>{brl(l.receita)}</td>
+                    <td className={cn(td, "text-right font-semibold")}>{brl(l.mrr)}</td>
                     <td className={cn(td, "text-right")}>{pct(l.conversao)}</td>
                   </tr>
                 );
@@ -95,7 +95,7 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
         <p>Meta do SDR = reuniões realizadas no mês. Conversão = vendas originadas ÷ reuniões realizadas.</p>
         {semSdr.qtd > 0 && (
           <p>
-            {semSdr.qtd} {semSdr.qtd === 1 ? "venda" : "vendas"} sem SDR (sem pré-venda): {brl(semSdr.aquisicao)}
+            {semSdr.qtd} {semSdr.qtd === 1 ? "venda" : "vendas"} sem SDR (sem pré-venda): {brl(semSdr.mrr)} de MRR
           </p>
         )}
         <p>

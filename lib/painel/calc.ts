@@ -261,7 +261,7 @@ export type LinhaSdr = {
   noShow: number;
   pct: number | null;
   vendas: number;
-  receita: number;
+  mrr: number; // MRR das vendas originadas pelo SDR
   conversao: number | null;
 };
 
@@ -291,11 +291,11 @@ export function rankingSdrs(d: PainelDados, mes: string) {
       noShow: minhas.filter((r) => r.status === "no_show").length,
       pct: metaReunioes === null ? null : percentual(realizadas, metaReunioes),
       vendas: originadas.length,
-      receita: resumir(originadas).aquisicao,
+      mrr: resumir(originadas).mrr,
       conversao: realizadas > 0 ? (originadas.length / realizadas) * 100 : null,
     };
   });
-  linhas.sort((a, b) => b.receita - a.receita || b.realizadas - a.realizadas || a.nome.localeCompare(b.nome, "pt-BR"));
+  linhas.sort((a, b) => b.mrr - a.mrr || b.realizadas - a.realizadas || a.nome.localeCompare(b.nome, "pt-BR"));
 
   const semSdr = resumir(vendasMes.filter((v) => !v.sdr_id));
   const somaMetas = linhas.reduce((s, l) => s + (l.metaReunioes ?? 0), 0);
