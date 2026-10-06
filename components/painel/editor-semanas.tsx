@@ -4,7 +4,7 @@ import { useState, useTransition, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { salvarMetasSemanais, type MetasSemanaisDoMes } from "@/app/painel/actions";
-import { faixaDe, parseValor, percentual } from "@/lib/painel/calc";
+import { aplicarRepasse, faixaDe, parseValor, percentual } from "@/lib/painel/calc";
 import { brl, dataCurta, nomeMes, pct } from "@/lib/painel/formato";
 import { cn } from "@/lib/utils";
 import { Barra } from "./ui";
@@ -58,6 +58,15 @@ export function EditorSemanas({ mes, semanas, metaMesMrr, metaMesNaoRecorrente }
   const somaNr = semanas.reduce((s, w) => s + valor(`${w.numero}:nr`), 0);
   const realizadoMes = semanas.reduce((s, w) => s + w.realizadoMrr + w.realizadoNaoRecorrente, 0);
   const totalDias = semanas.reduce((s, w) => s + w.diasUteis, 0);
+  const ajustes = aplicarRepasse(
+    semanas.map((w) => ({
+      metaMrr: valor(`${w.numero}:mrr`),
+      metaNaoRecorrente: valor(`${w.numero}:nr`),
+      realizadoMrr: w.realizadoMrr,
+      realizadoNaoRecorrente: w.realizadoNaoRecorrente,
+      status: w.status,
+    })),
+  );
 
   /** Sugestão inicial: divide a meta do mês proporcionalmente aos dias úteis de cada semana. */
   function distribuir() {
@@ -116,7 +125,7 @@ export function EditorSemanas({ mes, semanas, metaMesMrr, metaMesNaoRecorrente }
           </Button>
         )}
         <p className="order-last w-full text-sm text-muted-foreground">
-          Semanas contadas só em dias úteis (segunda a sexta, sem feriados), cortadas no início e no fim do mês. A meta diária da semana é o que falta ÷ dias úteis
+          Semanas contadas só em dias úteis (segunda a sexta, sem feriados), cortadas no início e no fim do mês. O que uma semana encerrada não bater passa automaticamente para a semana seguinte (os campos guardam a meta planejada; a coluna Meta da semana já inclui o repasse). A meta diária da semana é o que falta ÷ dias úteis
           que restam nela (segunda a sexta, contando hoje).
         </p>
       </div>
@@ -129,7 +138,7 @@ export function EditorSemanas({ mes, semanas, metaMesMrr, metaMesNaoRecorrente }
               <th className={th}>Dias úteis</th>
               <th className={th}>Meta MRR</th>
               <th className={th}>Meta não rec.</th>
-              <th className={th}>Meta total</th>
+              <th className={th}>Meta da semana</th>
               <th className={th}>Realizado</th>
               <th className={cn(th, "w-40 text-left")}>% da meta</th>
               <th className={th}>Falta</th>
@@ -137,9 +146,10 @@ export function EditorSemanas({ mes, semanas, metaMesMrr, metaMesNaoRecorrente }
             </tr>
           </thead>
           <tbody>
-            {semanas.map((w) => {
-              const metaMrr = valor(`${w.numero}:mrr`);
-              const metaNr = valor(`${w.numero}:nr`);
+            {semanas.map((w, i) => {
+              // Meta ajustada = meta digitada + o que não foi batido nas semanas anteriores
+              const { metaMrr, metaNaoRecorrente: metaNr, repasseMrr, repasseNaoRecorrente } = ajustes[i];
+              const repasse = repasseMrr + repasseNaoRecorrente;
               const meta = metaMrr + metaNr;
               const feito = w.realizadoMrr + w.realizadoNaoRecorrente;
               const p = percentual(feito, meta);
@@ -189,7 +199,14 @@ export function EditorSemanas({ mes, semanas, metaMesMrr, metaMesNaoRecorrente }
                       />
                     </div>
                   </td>
-                  <td className={cn(td, "font-semibold")}>{meta > 0 ? brl(meta) : "—"}</td>
+                  <td className={td}>
+                    <div className="flex flex-col items-end">
+                      <span className="font-semibold">{meta > 0 ? brl(meta) : "—"}</span>
+                      {repasse > 0 && (
+                        <span className="whitespace-nowrap text-xs text-[#fab219]">inclui {brl(repasse)} não batidos antes</span>
+                      )}
+                    </div>
+                  </td>
                   <td className={td}>
                     {futura ? (
                       <span className="text-muted-foreground">—</span>

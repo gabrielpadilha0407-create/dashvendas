@@ -41,8 +41,8 @@ export default async function SemanasPage({ searchParams }: { searchParams: Prom
     diasUteis: s.diasUteis,
     diasRestantes: diasUteisEntre(s.inicio, s.fim, hoje),
     status: s.status,
-    metaMrr: s.metaMrr,
-    metaNaoRecorrente: s.metaNaoRecorrente,
+    metaMrr: s.metaMrrPlanejada,
+    metaNaoRecorrente: s.metaNaoRecorrentePlanejada,
     realizadoMrr: s.realizado.mrr,
     realizadoNaoRecorrente: s.realizado.naoRecorrente,
   }));

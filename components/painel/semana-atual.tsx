@@ -62,6 +62,16 @@ export function SemanaAtual({ dados, mes, hoje }: { dados: PainelDados; mes: str
             <span className="text-2xl font-semibold tabular-nums text-muted-foreground xl:text-3xl">{pct(semana.pct)}</span>
           </div>
           <p className="mt-1 text-base tabular-nums text-muted-foreground">de {brl(semana.meta)} (aquisição total)</p>
+          {semana.repasseMrr + semana.repasseNaoRecorrente > 0 && (
+            <p className="mt-1 text-sm tabular-nums text-[#fab219]">
+              inclui {brl(semana.repasseMrr + semana.repasseNaoRecorrente)} não batidos nas semanas anteriores
+              {semana.repasseMrr > 0 && semana.repasseNaoRecorrente > 0
+                ? ` (MRR ${brl(semana.repasseMrr)} · não rec. ${brl(semana.repasseNaoRecorrente)})`
+                : semana.repasseMrr > 0
+                  ? " (MRR)"
+                  : " (não recorrente)"}
+            </p>
+          )}
           <div className="mt-3 flex items-center gap-3">
             <div className="flex-1">
               <Barra pct={semana.pct} faixa={faixa} alta />

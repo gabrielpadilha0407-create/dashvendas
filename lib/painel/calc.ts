@@ -203,33 +203,90 @@ export function semanasDoMes(mes: string): Semana[] {
   }));
 }
 
+export type StatusSemana = "futura" | "atual" | "passada";
+
+/**
+ * Repasse do que não foi batido: quando uma semana já passou sem bater a meta, o que faltou
+ * (MRR e não recorrente, separados) soma na meta da semana seguinte, em cadeia.
+ * A sobra de uma semana acima da meta não reduz a seguinte. Não passa de um mês para o outro.
+ */
+export function aplicarRepasse(
+  semanas: { metaMrr: number; metaNaoRecorrente: number; realizadoMrr: number; realizadoNaoRecorrente: number; status: StatusSemana }[],
+): { repasseMrr: number; repasseNaoRecorrente: number; metaMrr: number; metaNaoRecorrente: number }[] {
+  let saldoMrr = 0;
+  let saldoNr = 0;
+  return semanas.map((w) => {
+    const r = {
+      repasseMrr: saldoMrr,
+      repasseNaoRecorrente: saldoNr,
+      metaMrr: w.metaMrr + saldoMrr,
+      metaNaoRecorrente: w.metaNaoRecorrente + saldoNr,
+    };
+    // Só semanas encerradas geram repasse para a próxima
+    saldoMrr = w.status === "passada" ? Math.max(0, r.metaMrr - w.realizadoMrr) : 0;
+    saldoNr = w.status === "passada" ? Math.max(0, r.metaNaoRecorrente - w.realizadoNaoRecorrente) : 0;
+    return r;
+  });
+}
+
 export type LinhaSemana = Semana & {
+  /** meta digitada para a semana */
+  metaMrrPlanejada: number;
+  metaNaoRecorrentePlanejada: number;
+  /** quanto veio de semanas anteriores não batidas */
+  repasseMrr: number;
+  repasseNaoRecorrente: number;
+  /** meta ajustada = planejada + repasse */
   metaMrr: number;
   metaNaoRecorrente: number;
   meta: number;
   realizado: Resumo;
   pct: number | null;
-  status: "futura" | "atual" | "passada";
+  status: StatusSemana;
   diaria: MetaDiaria;
 };
 
-/** Metas e realizado de cada semana do mês. A meta diária da semana = falta ÷ dias úteis que restam na semana. */
+/** Metas (já com repasse) e realizado de cada semana do mês. Meta diária da semana = falta ÷ dias úteis que restam na semana. */
 export function visaoSemanas(d: PainelDados, mes: string, hoje: string): LinhaSemana[] {
-  return semanasDoMes(mes).map((s) => {
+  const base = semanasDoMes(mes).map((s) => {
     const m = d.metasSemanais.find((x) => x.mes === mes && x.semana === s.numero);
-    const metaMrr = m?.meta_mrr ?? 0;
-    const metaNaoRecorrente = m?.meta_nao_recorrente ?? 0;
-    const meta = metaMrr + metaNaoRecorrente;
     const realizado = resumir(d.vendas.filter((v) => v.data >= s.inicio && v.data <= s.fim));
-    const status = hoje > s.fim ? "passada" : hoje < s.inicio ? "futura" : "atual";
+    const status: StatusSemana = hoje > s.fim ? "passada" : hoje < s.inicio ? "futura" : "atual";
+    return { s, metaMrr: m?.meta_mrr ?? 0, metaNaoRecorrente: m?.meta_nao_recorrente ?? 0, realizado, status };
+  });
+  const ajustadas = aplicarRepasse(
+    base.map((b) => ({
+      metaMrr: b.metaMrr,
+      metaNaoRecorrente: b.metaNaoRecorrente,
+      realizadoMrr: b.realizado.mrr,
+      realizadoNaoRecorrente: b.realizado.naoRecorrente,
+      status: b.status,
+    })),
+  );
+  return base.map((b, i) => {
+    const a = ajustadas[i];
+    const meta = a.metaMrr + a.metaNaoRecorrente;
     let diaria: MetaDiaria;
     if (meta <= 0) diaria = { tipo: "sem_meta" };
-    else if (realizado.aquisicao >= meta) diaria = { tipo: "batida" };
+    else if (b.realizado.aquisicao >= meta) diaria = { tipo: "batida" };
     else {
-      const dias = diasUteisEntre(s.inicio, s.fim, hoje);
-      diaria = dias === 0 ? { tipo: "encerrado" } : { tipo: "valor", valor: (meta - realizado.aquisicao) / dias, dias };
+      const dias = diasUteisEntre(b.s.inicio, b.s.fim, hoje);
+      diaria = dias === 0 ? { tipo: "encerrado" } : { tipo: "valor", valor: (meta - b.realizado.aquisicao) / dias, dias };
     }
-    return { ...s, metaMrr, metaNaoRecorrente, meta, realizado, pct: percentual(realizado.aquisicao, meta), status, diaria };
+    return {
+      ...b.s,
+      metaMrrPlanejada: b.metaMrr,
+      metaNaoRecorrentePlanejada: b.metaNaoRecorrente,
+      repasseMrr: a.repasseMrr,
+      repasseNaoRecorrente: a.repasseNaoRecorrente,
+      metaMrr: a.metaMrr,
+      metaNaoRecorrente: a.metaNaoRecorrente,
+      meta,
+      realizado: b.realizado,
+      pct: percentual(b.realizado.aquisicao, meta),
+      status: b.status,
+      diaria,
+    };
   });
 }
 
