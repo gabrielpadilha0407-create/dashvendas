@@ -1,10 +1,17 @@
 import Link from "next/link";
-import { faixaDe, metaDiaria, rankingSdrs, type PainelDados } from "@/lib/painel/calc";
+import { faixaDe, metaDiaria, rankingSdrs, type MetaDiaria, type PainelDados } from "@/lib/painel/calc";
 import { brl, inteiro, pct, reunioesPorDia } from "@/lib/painel/formato";
 import { cn } from "@/lib/utils";
 import { Barra, Bloco, td, th } from "./ui";
 
-export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string }) {
+/** Reuniões por dia que faltam (meta − realizadas ÷ dias úteis restantes), ou "Meta batida". */
+function textoReunioes(d: MetaDiaria) {
+  if (d.tipo === "valor") return reunioesPorDia(d.valor);
+  if (d.tipo === "batida") return <span className="text-[#3fd13f]">Meta batida</span>;
+  return <span className="text-muted-foreground">—</span>;
+}
+
+export function RankingSdrs({ dados, mes, hoje }: { dados: PainelDados; mes: string; hoje: string }) {
   const { linhas, semSdr, somaMetas, totalRealizadas } = rankingSdrs(dados, mes);
 
   return (
@@ -62,7 +69,7 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
                       )}
                     </td>
                     <td className={cn(td, "whitespace-nowrap text-right font-semibold")}>
-                      {reunioesPorDia(metaDiaria(l.metaReunioes ?? 0, mes))}
+                      {textoReunioes(metaDiaria(l.metaReunioes ?? 0, l.realizadas, mes, hoje))}
                     </td>
                     <td className={cn(td, "text-right")}>{inteiro(l.vendas)}</td>
                     <td className={cn(td, "text-right font-semibold")}>{brl(l.mrr)}</td>
@@ -83,7 +90,14 @@ export function RankingSdrs({ dados, mes }: { dados: PainelDados; mes: string })
                   {inteiro(linhas.reduce((s, l) => s + Math.max(0, (l.metaReunioes ?? 0) - l.realizadas), 0))}
                 </td>
                 <td className={cn(td, "whitespace-nowrap text-right font-semibold")}>
-                  {reunioesPorDia(metaDiaria(somaMetas, mes))}
+                  {textoReunioes(
+                    metaDiaria(
+                      somaMetas,
+                      somaMetas - linhas.reduce((s, l) => s + Math.max(0, (l.metaReunioes ?? 0) - l.realizadas), 0),
+                      mes,
+                      hoje,
+                    ),
+                  )}
                 </td>
                 <td colSpan={3} />
               </tr>

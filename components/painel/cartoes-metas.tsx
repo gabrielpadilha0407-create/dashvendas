@@ -1,4 +1,4 @@
-import { diasUteisDoMes, diasUteisRestantes, faixaDe, metaDiaria, metaGlobal, percentual, resumir, type PainelDados } from "@/lib/painel/calc";
+import { diasUteisRestantes, faixaDe, metaGlobal, percentual, resumir, type PainelDados } from "@/lib/painel/calc";
 import { brl, pct } from "@/lib/painel/formato";
 import { Barra, Bloco, SeloFaixa } from "./ui";
 
@@ -6,7 +6,6 @@ export function CartoesMetas({ dados, mes, hoje }: { dados: PainelDados; mes: st
   const meta = metaGlobal(dados, mes);
   const r = resumir(dados.vendas.filter((v) => v.data.startsWith(mes)));
   const dias = diasUteisRestantes(mes, hoje);
-  const diasMes = diasUteisDoMes(mes);
   const mesAtual = hoje.slice(0, 7);
 
   const cartoes = [
@@ -18,7 +17,7 @@ export function CartoesMetas({ dados, mes, hoje }: { dados: PainelDados; mes: st
   return (
     <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
       {cartoes.map((c) => (
-        <CartaoMeta key={c.titulo} {...c} mes={mes} diasMes={diasMes} dias={dias} encerrado={mes < mesAtual} futuro={mes > mesAtual} />
+        <CartaoMeta key={c.titulo} {...c} dias={dias} encerrado={mes < mesAtual} futuro={mes > mesAtual} />
       ))}
     </div>
   );
@@ -28,8 +27,6 @@ function CartaoMeta({
   titulo,
   realizado,
   meta,
-  mes,
-  diasMes,
   dias,
   encerrado,
   futuro,
@@ -37,14 +34,11 @@ function CartaoMeta({
   titulo: string;
   realizado: number;
   meta: number;
-  mes: string;
-  diasMes: number;
   dias: number;
   encerrado: boolean;
   futuro: boolean;
 }) {
   const temMeta = meta > 0;
-  const diaria = metaDiaria(meta, mes);
   const p = temMeta ? percentual(realizado, meta) : null;
   const faixa = faixaDe(p);
   const falta = temMeta ? Math.max(0, meta - realizado) : 0;
@@ -62,8 +56,8 @@ function CartaoMeta({
     ritmo = brl(falta / dias);
     const plural = dias === 1 ? "dia útil" : "dias úteis";
     detalhe = futuro
-      ? `por dia útil · ${dias} ${plural} no mês`
-      : `por dia útil · ${dias} ${plural} ${dias === 1 ? "restante" : "restantes"}, incluindo hoje`;
+      ? `por dia útil · ${dias} ${plural} no mês (seg. a sex.)`
+      : `por dia útil · ${dias} ${plural} ${dias === 1 ? "restante" : "restantes"} (seg. a sex., contando hoje)`;
   }
 
   return (
@@ -89,26 +83,17 @@ function CartaoMeta({
         <Barra pct={p} faixa={faixa} alta />
       </div>
 
-      <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-3 lg:grid-cols-2 2xl:grid-cols-3">
+      <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4">
         <div>
           <dt className="text-sm text-muted-foreground">Meta diária</dt>
-          <dd className="text-2xl font-semibold tabular-nums lg:text-xl xl:text-2xl 2xl:text-3xl">
-            {diaria === null ? "—" : brl(diaria)}
-          </dd>
-          <dd className="text-xs text-muted-foreground">
-            {diasMes} {diasMes === 1 ? "dia útil" : "dias úteis"} no mês (seg. a sex., sem feriados)
-          </dd>
+          <dd className="text-2xl font-semibold tabular-nums lg:text-xl xl:text-2xl 2xl:text-3xl">{ritmo}</dd>
+          <dd className="text-xs text-muted-foreground">{detalhe}</dd>
         </div>
         <div>
           <dt className="text-sm text-muted-foreground">Falta</dt>
           <dd className="text-2xl font-semibold tabular-nums lg:text-xl xl:text-2xl 2xl:text-3xl">
             {temMeta ? brl(falta) : "—"}
           </dd>
-        </div>
-        <div>
-          <dt className="text-sm text-muted-foreground">Ritmo necessário</dt>
-          <dd className="text-2xl font-semibold tabular-nums lg:text-xl xl:text-2xl 2xl:text-3xl">{ritmo}</dd>
-          <dd className="text-xs text-muted-foreground">{detalhe}</dd>
         </div>
       </dl>
     </Bloco>

@@ -101,11 +101,29 @@ function fimDoMes(mes: string): string {
 /** Dias úteis do mês inteiro (segunda a sexta, menos feriados). */
 export const diasUteisDoMes = (mes: string) => diasUteisRestantes(mes, `${mes}-01`);
 
-/** Meta diária = meta do mês ÷ dias úteis do mês. */
-export const metaDiaria = (meta: number, mes: string) => {
+/** Meta do mês ÷ dias úteis do mês inteiro. Usada só na aba Metas, para planejar. */
+export const metaPorDiaDoMes = (meta: number, mes: string) => {
   const dias = diasUteisDoMes(mes);
   return meta > 0 && dias > 0 ? meta / dias : null;
 };
+
+export type MetaDiaria =
+  | { tipo: "valor"; valor: number; dias: number }
+  | { tipo: "sem_meta" }
+  | { tipo: "batida" }
+  | { tipo: "encerrado" };
+
+/**
+ * Meta diária no ritmo atual: quanto falta ÷ dias úteis restantes no mês (segunda a sexta,
+ * sem feriados, contando hoje). Muda a cada venda; num mês futuro equivale à meta ÷ dias do mês.
+ */
+export function metaDiaria(meta: number, realizado: number, mes: string, hoje: string): MetaDiaria {
+  if (meta <= 0) return { tipo: "sem_meta" };
+  if (realizado >= meta) return { tipo: "batida" };
+  const dias = diasUteisRestantes(mes, hoje);
+  if (dias === 0) return { tipo: "encerrado" };
+  return { tipo: "valor", valor: (meta - realizado) / dias, dias };
+}
 
 /** Dias úteis do mês a partir de hoje (inclusive). Mês passado = 0; mês futuro = todos. */
 export function diasUteisRestantes(mes: string, hoje: string): number {

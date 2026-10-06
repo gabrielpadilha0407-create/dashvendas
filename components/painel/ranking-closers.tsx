@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { faixaDe, metaDiaria, metaGlobal, rankingClosers, superMeta, type PainelDados } from "@/lib/painel/calc";
+import { faixaDe, metaDiaria, metaGlobal, rankingClosers, superMeta, type MetaDiaria, type PainelDados } from "@/lib/painel/calc";
 import { brl, brlCurto, inteiro, pct } from "@/lib/painel/formato";
 import { cn } from "@/lib/utils";
 import { Barra, Bloco, SeloFaixa, td, th } from "./ui";
@@ -71,20 +71,36 @@ function Parcial({
   );
 }
 
-/** Meta diária total, com MRR e não recorrente embaixo. */
-function Diaria({ total, mrr, nr }: { total: number | null; mrr: number | null; nr: number | null }) {
-  if (total === null) return <span className="text-muted-foreground">—</span>;
+/** Texto de uma meta diária: valor por dia, "batida" ou "—". */
+function textoDiaria(d: MetaDiaria): string {
+  if (d.tipo === "valor") return brl(d.valor);
+  if (d.tipo === "batida") return "batida";
+  return "—";
+}
+
+/** Meta diária (o que falta ÷ dias úteis restantes) do total, com MRR e não recorrente embaixo. */
+function Diaria({ total, mrr, nr }: { total: MetaDiaria; mrr: MetaDiaria; nr: MetaDiaria }) {
+  if (total.tipo === "sem_meta" || total.tipo === "encerrado") return <span className="text-muted-foreground">—</span>;
   return (
     <div className="flex flex-col items-end">
-      <span className="whitespace-nowrap font-semibold">{brl(total)}</span>
-      <span className="whitespace-nowrap text-xs text-muted-foreground">MRR {mrr === null ? "—" : brl(mrr)}</span>
-      <span className="whitespace-nowrap text-xs text-muted-foreground">Não rec. {nr === null ? "—" : brl(nr)}</span>
+      <span className={cn("whitespace-nowrap font-semibold", total.tipo === "batida" && "text-[#3fd13f]")}>
+        {total.tipo === "batida" ? "Meta batida" : textoDiaria(total)}
+      </span>
+      <span className="whitespace-nowrap text-xs text-muted-foreground">MRR {textoDiaria(mrr)}</span>
+      <span className="whitespace-nowrap text-xs text-muted-foreground">Não rec. {textoDiaria(nr)}</span>
     </div>
   );
 }
 
-export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string }) {
+export function RankingClosers({ dados, mes, hoje }: { dados: PainelDados; mes: string; hoje: string }) {
   const { linhas, somaMetas } = rankingClosers(dados, mes);
+  // Meta diária do time = soma do que falta para cada closer ÷ dias úteis restantes
+  const falta = (meta: number, feito: number) => Math.max(0, meta - feito);
+  const faltaTime = {
+    total: linhas.reduce((s, l) => s + falta(l.meta ?? 0, l.realizado), 0),
+    mrr: linhas.reduce((s, l) => s + falta(l.metaMrr, l.mrr), 0),
+    naoRecorrente: linhas.reduce((s, l) => s + falta(l.metaNaoRecorrente, l.naoRecorrente), 0),
+  };
   const global = metaGlobal(dados, mes);
   const totalRealizado = linhas.reduce((s, l) => s + l.realizado, 0);
   const totalMrr = linhas.reduce((s, l) => s + l.mrr, 0);
@@ -150,9 +166,9 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
                     </td>
                     <td className={td}>
                       <Diaria
-                        total={metaDiaria(l.meta ?? 0, mes)}
-                        mrr={metaDiaria(l.metaMrr, mes)}
-                        nr={metaDiaria(l.metaNaoRecorrente, mes)}
+                        total={metaDiaria(l.meta ?? 0, l.realizado, mes, hoje)}
+                        mrr={metaDiaria(l.metaMrr, l.mrr, mes, hoje)}
+                        nr={metaDiaria(l.metaNaoRecorrente, l.naoRecorrente, mes, hoje)}
                       />
                     </td>
                     <td className={td}>
@@ -184,9 +200,9 @@ export function RankingClosers({ dados, mes }: { dados: PainelDados; mes: string
                 </td>
                 <td className={td}>
                   <Diaria
-                    total={metaDiaria(somaMetas.total, mes)}
-                    mrr={metaDiaria(somaMetas.mrr, mes)}
-                    nr={metaDiaria(somaMetas.naoRecorrente, mes)}
+                    total={metaDiaria(somaMetas.total, somaMetas.total - faltaTime.total, mes, hoje)}
+                    mrr={metaDiaria(somaMetas.mrr, somaMetas.mrr - faltaTime.mrr, mes, hoje)}
+                    nr={metaDiaria(somaMetas.naoRecorrente, somaMetas.naoRecorrente - faltaTime.naoRecorrente, mes, hoje)}
                   />
                 </td>
                 <td className={cn(td, "whitespace-nowrap text-right")}>

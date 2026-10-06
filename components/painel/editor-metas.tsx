@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { salvarMetas, type MetasDoMes } from "@/app/painel/actions";
-import { diasUteisDoMes, metaDiaria, parseValor } from "@/lib/painel/calc";
+import { diasUteisDoMes, metaPorDiaDoMes, parseValor } from "@/lib/painel/calc";
 import { brl, nomeMes, reunioesPorDia } from "@/lib/painel/formato";
 
 type Valores = { mrr: number; naoRecorrente: number; reunioes: number };
@@ -65,7 +65,7 @@ export function EditorMetas(props: Props) {
   const somaNr = closers.reduce((s, p) => s + valor(chave(p.id, "nr")), 0);
   const diasMes = diasUteisDoMes(mes);
   const porDia = (v: number) => {
-    const d = metaDiaria(v, mes);
+    const d = metaPorDiaDoMes(v, mes);
     return d === null ? "" : `${brl(d)} por dia`;
   };
 
@@ -148,7 +148,7 @@ export function EditorMetas(props: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold tracking-tight">Metas de {nomeMes(mes)} {mes.slice(0, 4)}</h2>
         <p className="order-last w-full text-sm text-muted-foreground">
-          {diasMes} dias úteis no mês (segunda a sexta, sem feriados). A meta diária é a meta do mês dividida por esses dias.
+          {diasMes} dias úteis no mês (segunda a sexta, sem feriados). Aqui o valor por dia é a meta ÷ dias úteis do mês, para planejar; no painel, a meta diária se ajusta todo dia ao que ainda falta.
         </p>
         {mesAnterior && temAnterior && (
           <Button variant="outline" onClick={copiarAnterior} disabled={salvando}>
@@ -274,7 +274,7 @@ export function EditorMetas(props: Props) {
                 {campo(chave(p.id, "reunioes"), `Meta de reuniões de ${p.nome}`)}
                 <span className="w-16 text-sm text-muted-foreground">reuniões</span>
                 <span className="w-24 text-sm tabular-nums text-muted-foreground">
-                  {valor(chave(p.id, "reunioes")) > 0 ? reunioesPorDia(metaDiaria(valor(chave(p.id, "reunioes")), mes)) : ""}
+                  {valor(chave(p.id, "reunioes")) > 0 ? reunioesPorDia(metaPorDiaDoMes(valor(chave(p.id, "reunioes")), mes)) : ""}
                 </span>
               </div>
             </div>

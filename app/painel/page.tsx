@@ -82,12 +82,12 @@ export default async function PainelPage({
         {blocoOuErro(
           ["pessoas", "vendas", "metas_individuais"],
           "Ranking de closers",
-          <RankingClosers dados={dados} mes={mes} />,
+          <RankingClosers dados={dados} mes={mes} hoje={hoje} />,
         )}
         {blocoOuErro(
           ["pessoas", "vendas", "metas_individuais", "reunioes"],
           "Ranking de SDRs",
-          <RankingSdrs dados={dados} mes={mes} />,
+          <RankingSdrs dados={dados} mes={mes} hoje={hoje} />,
         )}
       </div>
 
