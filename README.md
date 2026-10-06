@@ -78,6 +78,8 @@ Usa as mesmas pessoas e vendas lançadas no dashboard e a mesma senha de equipe.
 - **`/painel/metas`:** meta global do mês (MRR e não recorrente) e meta de cada pessoa —
   closer com meta de MRR e de não recorrente (a meta total é a soma), SDR em número de reuniões
   realizadas. Botão para copiar do mês anterior. Requer também `supabase/003_metas_closer_mrr_nr.sql`.
+- **`/painel/semanas`:** metas semanais do time (MRR e não recorrente por semana, editáveis e sem divisão por pessoa),
+  com realizado, falta e meta diária da semana. Requer `supabase/004_metas_semanais.sql`. O Painel mostra a semana atual.
 - **`/painel/reunioes`:** lançamento das reuniões dos SDRs (realizada, no-show, remarcada).
 - **Comemoração:** quando a meta de aquisição, MRR ou não recorrente do mês atual é batida, o painel solta fogos
   uma vez por meta em cada aparelho. Para testar: `/painel?comemorar=1`.

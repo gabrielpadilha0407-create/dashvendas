@@ -3,13 +3,14 @@ import { supabaseServer } from "@/lib/supabase/server";
 import {
   type MetaGlobalP,
   type MetaIndividualP,
+  type MetaSemanalP,
   type PainelDados,
   type PessoaP,
   type ReuniaoP,
   type VendaP,
 } from "./calc";
 
-export type Tabela = "pessoas" | "vendas" | "metas" | "metas_individuais" | "reunioes";
+export type Tabela = "pessoas" | "vendas" | "metas" | "metas_individuais" | "reunioes" | "metas_semanais";
 
 export type CargaPainel = {
   dados: PainelDados;
@@ -35,6 +36,9 @@ function mensagemAmigavel(tabela: Tabela, erro: string): string {
   if (tabela === "metas_individuais" && /meta_mrr|meta_nao_recorrente/.test(erro)) {
     return "Faltam as colunas de meta MRR / não recorrente por closer. Rode o arquivo supabase/003_metas_closer_mrr_nr.sql no SQL Editor do Supabase.";
   }
+  if (/does not exist|schema cache|could not find/i.test(erro) && tabela === "metas_semanais") {
+    return "A tabela de metas semanais ainda não existe. Rode o arquivo supabase/004_metas_semanais.sql no SQL Editor do Supabase.";
+  }
   if (/does not exist|schema cache|could not find/i.test(erro) && (tabela === "metas_individuais" || tabela === "reunioes")) {
     return `A tabela ${tabela} ainda não existe. Rode o arquivo supabase/002_painel.sql no SQL Editor do Supabase.`;
   }
@@ -51,7 +55,7 @@ export async function getPainelDados(ano: number): Promise<CargaPainel> {
   const mesInicio = `${ano - 1}-12`;
   const mesFim = `${ano}-12`;
 
-  const [pessoas, vendas, metas, metasInd, reunioes] = await Promise.all([
+  const [pessoas, vendas, metas, metasInd, reunioes, metasSem] = await Promise.all([
     paginar((de, ate) => sb.from("pessoas").select("id,nome,papel,ativo").order("nome").range(de, ate)),
     paginar((de, ate) =>
       sb
@@ -84,6 +88,15 @@ export async function getPainelDados(ano: number): Promise<CargaPainel> {
         .order("created_at", { ascending: false })
         .range(de, ate),
     ),
+    paginar((de, ate) =>
+      sb
+        .from("metas_semanais")
+        .select("id,mes,semana,meta_mrr,meta_nao_recorrente")
+        .gte("mes", mesInicio)
+        .lte("mes", mesFim)
+        .order("id")
+        .range(de, ate),
+    ),
   ]);
 
   const erros: CargaPainel["erros"] = [];
@@ -95,6 +108,7 @@ export async function getPainelDados(ano: number): Promise<CargaPainel> {
   conferir("metas", metas);
   conferir("metas_individuais", metasInd);
   conferir("reunioes", reunioes);
+  conferir("metas_semanais", metasSem);
 
   return {
     erros,
@@ -133,6 +147,14 @@ export async function getPainelDados(ano: number): Promise<CargaPainel> {
           sdr_id: String(r.sdr_id),
           closer_id: (r.closer_id as string | null) ?? null,
           status: r.status as ReuniaoP["status"],
+        }),
+      ),
+      metasSemanais: metasSem.linhas.map(
+        (m): MetaSemanalP => ({
+          mes: String(m.mes),
+          semana: num(m.semana),
+          meta_mrr: num(m.meta_mrr),
+          meta_nao_recorrente: num(m.meta_nao_recorrente),
         }),
       ),
     },

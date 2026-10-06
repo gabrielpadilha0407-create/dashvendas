@@ -66,6 +66,7 @@ export type PainelDados = {
   metas: MetaGlobalP[];
   metasIndividuais: MetaIndividualP[];
   reunioes: ReuniaoP[];
+  metasSemanais: MetaSemanalP[];
 };
 
 // ---------- Datas
@@ -127,13 +128,16 @@ export function metaDiaria(meta: number, realizado: number, mes: string, hoje: s
 
 /** Dias úteis do mês a partir de hoje (inclusive). Mês passado = 0; mês futuro = todos. */
 export function diasUteisRestantes(mes: string, hoje: string): number {
-  const inicio = `${mes}-01`;
-  const fim = fimDoMes(mes);
+  return diasUteisEntre(`${mes}-01`, fimDoMes(mes), hoje);
+}
+
+/** Dias úteis (segunda a sexta, sem feriados) entre `inicio` e `fim`, contando só a partir de hoje (inclusive). */
+export function diasUteisEntre(inicio: string, fim: string, hoje: string): number {
   const de = hoje > inicio ? hoje : inicio;
   if (de > fim) return 0;
   const [a, m, d] = de.split("-").map(Number);
   const cursor = new Date(Date.UTC(a, m - 1, d));
-  const folgas = feriados(anoDe(mes));
+  const folgas = feriados(a);
   let n = 0;
   for (let s = cursor.toISOString().slice(0, 10); s <= fim; s = cursor.toISOString().slice(0, 10)) {
     const dia = cursor.getUTCDay();
@@ -141,6 +145,72 @@ export function diasUteisRestantes(mes: string, hoje: string): number {
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return n;
+}
+
+// ---------- Semanas
+
+export type MetaSemanalP = { mes: string; semana: number; meta_mrr: number; meta_nao_recorrente: number };
+
+export type Semana = { numero: number; inicio: string; fim: string; diasUteis: number };
+
+/**
+ * Semanas do mês: segunda a domingo, cortadas no primeiro e no último dia do mês.
+ * Se o mês começa num sábado ou domingo, esses dias entram na primeira semana útil.
+ */
+export function semanasDoMes(mes: string): Semana[] {
+  const fim = fimDoMes(mes);
+  const [a, m] = mes.split("-").map(Number);
+  const cursor = new Date(Date.UTC(a, m - 1, 1));
+  const semanas: { inicio: string; fim: string; temDiaDeSemana: boolean }[] = [];
+  for (let s = cursor.toISOString().slice(0, 10); s <= fim; s = cursor.toISOString().slice(0, 10)) {
+    const dia = cursor.getUTCDay();
+    if (semanas.length === 0 || dia === 1) semanas.push({ inicio: s, fim: s, temDiaDeSemana: false });
+    const atual = semanas[semanas.length - 1];
+    atual.fim = s;
+    if (dia !== 0 && dia !== 6) atual.temDiaDeSemana = true;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  // Mês que começa no sábado/domingo: esses dias soltos entram na semana seguinte
+  if (semanas.length > 1 && !semanas[0].temDiaDeSemana) {
+    semanas[1].inicio = semanas[0].inicio;
+    semanas.shift();
+  }
+  return semanas.map((w, i) => ({
+    numero: i + 1,
+    inicio: w.inicio,
+    fim: w.fim,
+    diasUteis: diasUteisEntre(w.inicio, w.fim, w.inicio),
+  }));
+}
+
+export type LinhaSemana = Semana & {
+  metaMrr: number;
+  metaNaoRecorrente: number;
+  meta: number;
+  realizado: Resumo;
+  pct: number | null;
+  status: "futura" | "atual" | "passada";
+  diaria: MetaDiaria;
+};
+
+/** Metas e realizado de cada semana do mês. A meta diária da semana = falta ÷ dias úteis que restam na semana. */
+export function visaoSemanas(d: PainelDados, mes: string, hoje: string): LinhaSemana[] {
+  return semanasDoMes(mes).map((s) => {
+    const m = d.metasSemanais.find((x) => x.mes === mes && x.semana === s.numero);
+    const metaMrr = m?.meta_mrr ?? 0;
+    const metaNaoRecorrente = m?.meta_nao_recorrente ?? 0;
+    const meta = metaMrr + metaNaoRecorrente;
+    const realizado = resumir(d.vendas.filter((v) => v.data >= s.inicio && v.data <= s.fim));
+    const status = hoje > s.fim ? "passada" : hoje < s.inicio ? "futura" : "atual";
+    let diaria: MetaDiaria;
+    if (meta <= 0) diaria = { tipo: "sem_meta" };
+    else if (realizado.aquisicao >= meta) diaria = { tipo: "batida" };
+    else {
+      const dias = diasUteisEntre(s.inicio, s.fim, hoje);
+      diaria = dias === 0 ? { tipo: "encerrado" } : { tipo: "valor", valor: (meta - realizado.aquisicao) / dias, dias };
+    }
+    return { ...s, metaMrr, metaNaoRecorrente, meta, realizado, pct: percentual(realizado.aquisicao, meta), status, diaria };
+  });
 }
 
 // ---------- Números

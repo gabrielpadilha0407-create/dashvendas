@@ -4,6 +4,7 @@ import { anoDe, anosDisponiveis, hojeSP, metaGlobal, pendencias, resolverMes, re
 import { Atualizar } from "@/components/painel/atualizar";
 import { Comemoracao, type MetaComemoravel } from "@/components/painel/comemoracao";
 import { CartoesMetas } from "@/components/painel/cartoes-metas";
+import { SemanaAtual } from "@/components/painel/semana-atual";
 import { RankingClosers } from "@/components/painel/ranking-closers";
 import { RankingSdrs } from "@/components/painel/ranking-sdrs";
 import { SeletorMes } from "@/components/painel/seletor-mes";
@@ -77,6 +78,8 @@ export default async function PainelPage({
       )}
 
       {blocoOuErro(["vendas", "metas"], "Metas do mês", <CartoesMetas dados={dados} mes={mes} hoje={hoje} />)}
+
+      {mes === mesAtual && blocoOuErro(["vendas", "metas_semanais"], "Meta da semana", <SemanaAtual dados={dados} mes={mes} hoje={hoje} />)}
 
       <div className="grid gap-6 min-[2400px]:grid-cols-[11fr_9fr]">
         {blocoOuErro(

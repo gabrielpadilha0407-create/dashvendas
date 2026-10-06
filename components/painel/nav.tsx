@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const ABAS = [
   { href: "/painel", rotulo: "Painel" },
   { href: "/painel/metas", rotulo: "Metas" },
+  { href: "/painel/semanas", rotulo: "Semanas" },
   { href: "/painel/reunioes", rotulo: "Reuniões" },
 ];
 

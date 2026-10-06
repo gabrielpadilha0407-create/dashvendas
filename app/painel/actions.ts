@@ -99,3 +99,33 @@ export async function excluirReuniao(id: string): Promise<ResultadoAcao> {
   atualizarTelas();
   return { error: null };
 }
+
+// ---------- Metas semanais (do time)
+
+export type MetasSemanaisDoMes = {
+  mes: string;
+  semanas: { semana: number; metaMrr: number; metaNaoRecorrente: number }[];
+};
+
+export async function salvarMetasSemanais(dados: MetasSemanaisDoMes): Promise<ResultadoAcao> {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(dados.mes) || anoDe(dados.mes) < ANO_INICIAL) return { error: "Mês inválido." };
+  for (const s of dados.semanas) {
+    if (!Number.isInteger(s.semana) || s.semana < 1 || s.semana > 6) return { error: "Semana inválida." };
+    if (!valido(s.metaMrr) || !valido(s.metaNaoRecorrente)) return { error: `Meta inválida na semana ${s.semana}.` };
+  }
+
+  const sb = supabaseServer();
+  const { error } = await sb.from("metas_semanais").upsert(
+    dados.semanas.map((s) => ({
+      mes: dados.mes,
+      semana: s.semana,
+      meta_mrr: s.metaMrr,
+      meta_nao_recorrente: s.metaNaoRecorrente,
+    })),
+    { onConflict: "mes,semana" },
+  );
+  if (error) return { error: `Erro ao salvar as metas semanais: ${error.message}` };
+
+  atualizarTelas();
+  return { error: null, enviadoEm: Date.now() };
+}
