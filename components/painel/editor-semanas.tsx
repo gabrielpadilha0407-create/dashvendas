@@ -158,6 +158,11 @@ export function EditorSemanas({ mes, semanas, metaMesMrr, metaMesNaoRecorrente }
               let diaria: ReactNode = <span className="text-muted-foreground">—</span>;
               if (meta > 0 && falta === 0) diaria = <span className="text-[#3fd13f]">Meta batida</span>;
               else if (meta > 0 && w.diasRestantes > 0) diaria = brl(falta / w.diasRestantes);
+              // Meta diária separada: o que falta de MRR e de não recorrente ÷ dias úteis que restam na semana
+              const porDia = (metaParte: number, feitoParte: number) =>
+                metaParte <= 0 ? "—" : feitoParte >= metaParte ? "batida" : w.diasRestantes > 0 ? brl((metaParte - feitoParte) / w.diasRestantes) : "—";
+              const diariaMrr = porDia(metaMrr, w.realizadoMrr);
+              const diariaNr = porDia(metaNr, w.realizadoNaoRecorrente);
               return (
                 <tr
                   key={w.numero}
@@ -243,7 +248,17 @@ export function EditorSemanas({ mes, semanas, metaMesMrr, metaMesNaoRecorrente }
                       brl(falta)
                     )}
                   </td>
-                  <td className={cn(td, "font-semibold")}>{diaria}</td>
+                  <td className={td}>
+                    <div className="flex flex-col items-end">
+                      <span className="font-semibold">{diaria}</span>
+                      {meta > 0 && falta > 0 && w.diasRestantes > 0 && (
+                        <>
+                          <span className="whitespace-nowrap text-xs text-muted-foreground">MRR {diariaMrr}</span>
+                          <span className="whitespace-nowrap text-xs text-muted-foreground">Não rec. {diariaNr}</span>
+                        </>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               );
             })}

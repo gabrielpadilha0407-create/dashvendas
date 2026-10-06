@@ -33,6 +33,11 @@ export function SemanaAtual({ dados, mes, hoje }: { dados: PainelDados; mes: str
       : d.tipo === "encerrado"
         ? "sem dias úteis restantes na semana"
         : "";
+  // Meta diária separada de MRR e não recorrente (o que falta de cada um ÷ dias úteis restantes na semana)
+  const porDia = (meta: number, feito: number) =>
+    meta <= 0 ? "—" : feito >= meta ? "batida" : d.tipo === "valor" ? brl((meta - feito) / d.dias) : "—";
+  const diariaMrr = porDia(semana.metaMrr, r.mrr);
+  const diariaNr = porDia(semana.metaNaoRecorrente, r.naoRecorrente);
 
   const parcial = (rotulo: string, feito: number, meta: number) => {
     const p = percentual(feito, meta);
@@ -83,6 +88,12 @@ export function SemanaAtual({ dados, mes, hoje }: { dados: PainelDados; mes: str
           <div>
             <dt className="text-sm text-muted-foreground">Meta diária da semana</dt>
             <dd className="text-2xl font-semibold tabular-nums xl:text-3xl">{diaria}</dd>
+            {d.tipo === "valor" && (
+              <dd className="mt-1 text-sm tabular-nums text-muted-foreground">
+                MRR <span className="font-semibold text-foreground">{diariaMrr}</span> · Não rec.{" "}
+                <span className="font-semibold text-foreground">{diariaNr}</span>
+              </dd>
+            )}
             {detalheDiaria && <dd className="text-xs text-muted-foreground">{detalheDiaria}</dd>}
           </div>
           <div>
