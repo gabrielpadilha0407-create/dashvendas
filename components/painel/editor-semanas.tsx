@@ -13,6 +13,8 @@ export type SemanaEditavel = {
   numero: number;
   inicio: string;
   fim: string;
+  primeiroUtil: string;
+  ultimoUtil: string;
   diasUteis: number;
   /** dias úteis que ainda restam na semana, contando hoje */
   diasRestantes: number;
@@ -114,7 +116,7 @@ export function EditorSemanas({ mes, semanas, metaMesMrr, metaMesNaoRecorrente }
           </Button>
         )}
         <p className="order-last w-full text-sm text-muted-foreground">
-          Semanas de segunda a domingo, cortadas no início e no fim do mês. A meta diária da semana é o que falta ÷ dias úteis
+          Semanas contadas só em dias úteis (segunda a sexta, sem feriados), cortadas no início e no fim do mês. A meta diária da semana é o que falta ÷ dias úteis
           que restam nela (segunda a sexta, contando hoje).
         </p>
       </div>
@@ -159,7 +161,7 @@ export function EditorSemanas({ mes, semanas, metaMesMrr, metaMesNaoRecorrente }
                       )}
                     </div>
                     <div className="text-xs tabular-nums text-muted-foreground">
-                      {dataCurta(w.inicio)} a {dataCurta(w.fim)}
+                      {dataCurta(w.primeiroUtil)} a {dataCurta(w.ultimoUtil)}
                     </div>
                   </td>
                   <td className={td}>{w.diasUteis}</td>

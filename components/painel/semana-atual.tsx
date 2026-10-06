@@ -8,7 +8,7 @@ export function SemanaAtual({ dados, mes, hoje }: { dados: PainelDados; mes: str
   const semana = visaoSemanas(dados, mes, hoje).find((s) => s.status === "atual");
   if (!semana) return null;
 
-  const titulo = `Semana ${semana.numero} · ${dataCurta(semana.inicio)} a ${dataCurta(semana.fim)}`;
+  const titulo = `Semana ${semana.numero} · ${dataCurta(semana.primeiroUtil)} a ${dataCurta(semana.ultimoUtil)}`;
   if (semana.meta <= 0) {
     return (
       <Bloco titulo="Meta da semana" extra={titulo}>

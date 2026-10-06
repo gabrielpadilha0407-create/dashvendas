@@ -151,35 +151,55 @@ export function diasUteisEntre(inicio: string, fim: string, hoje: string): numbe
 
 export type MetaSemanalP = { mes: string; semana: number; meta_mrr: number; meta_nao_recorrente: number };
 
-export type Semana = { numero: number; inicio: string; fim: string; diasUteis: number };
+export type Semana = {
+  numero: number;
+  /** limites de calendário da semana (vendas de sábado/domingo caem na semana em que aconteceram) */
+  inicio: string;
+  fim: string;
+  /** primeiro e último dia útil da semana — é o período mostrado na tela */
+  primeiroUtil: string;
+  ultimoUtil: string;
+  diasUteis: number;
+};
+
+/** Segunda a sexta e não feriado. */
+export function ehDiaUtil(data: string): boolean {
+  const [a, m, d] = data.split("-").map(Number);
+  const dia = new Date(Date.UTC(a, m - 1, d)).getUTCDay();
+  return dia !== 0 && dia !== 6 && !feriados(a).has(data);
+}
 
 /**
- * Semanas do mês: segunda a domingo, cortadas no primeiro e no último dia do mês.
- * Se o mês começa num sábado ou domingo, esses dias entram na primeira semana útil.
+ * Semanas do mês contadas em dias úteis (segunda a sexta, sem feriados), cortadas no mês.
+ * Um pedaço de semana sem nenhum dia útil (ex.: mês que começa no sábado) entra na semana vizinha.
  */
 export function semanasDoMes(mes: string): Semana[] {
   const fim = fimDoMes(mes);
   const [a, m] = mes.split("-").map(Number);
   const cursor = new Date(Date.UTC(a, m - 1, 1));
-  const semanas: { inicio: string; fim: string; temDiaDeSemana: boolean }[] = [];
+  const semanas: { inicio: string; fim: string; uteis: string[] }[] = [];
   for (let s = cursor.toISOString().slice(0, 10); s <= fim; s = cursor.toISOString().slice(0, 10)) {
-    const dia = cursor.getUTCDay();
-    if (semanas.length === 0 || dia === 1) semanas.push({ inicio: s, fim: s, temDiaDeSemana: false });
+    if (semanas.length === 0 || cursor.getUTCDay() === 1) semanas.push({ inicio: s, fim: s, uteis: [] });
     const atual = semanas[semanas.length - 1];
     atual.fim = s;
-    if (dia !== 0 && dia !== 6) atual.temDiaDeSemana = true;
+    if (ehDiaUtil(s)) atual.uteis.push(s);
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
-  // Mês que começa no sábado/domingo: esses dias soltos entram na semana seguinte
-  if (semanas.length > 1 && !semanas[0].temDiaDeSemana) {
+  if (semanas.length > 1 && semanas[0].uteis.length === 0) {
     semanas[1].inicio = semanas[0].inicio;
     semanas.shift();
+  }
+  if (semanas.length > 1 && semanas[semanas.length - 1].uteis.length === 0) {
+    semanas[semanas.length - 2].fim = semanas[semanas.length - 1].fim;
+    semanas.pop();
   }
   return semanas.map((w, i) => ({
     numero: i + 1,
     inicio: w.inicio,
     fim: w.fim,
-    diasUteis: diasUteisEntre(w.inicio, w.fim, w.inicio),
+    primeiroUtil: w.uteis[0] ?? w.inicio,
+    ultimoUtil: w.uteis[w.uteis.length - 1] ?? w.fim,
+    diasUteis: w.uteis.length,
   }));
 }
 

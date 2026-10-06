@@ -36,6 +36,8 @@ export default async function SemanasPage({ searchParams }: { searchParams: Prom
     numero: s.numero,
     inicio: s.inicio,
     fim: s.fim,
+    primeiroUtil: s.primeiroUtil,
+    ultimoUtil: s.ultimoUtil,
     diasUteis: s.diasUteis,
     diasRestantes: diasUteisEntre(s.inicio, s.fim, hoje),
     status: s.status,
