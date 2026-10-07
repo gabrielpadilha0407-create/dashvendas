@@ -88,10 +88,144 @@ export function FormReuniao({ sdrs, closers, dataPadrao }: { sdrs: Opcao[]; clos
   );
 }
 
-export function ListaReunioes({ reunioes, nomes }: { reunioes: ReuniaoP[]; nomes: Record<string, string> }) {
+const campoFiltro = "h-10 rounded-md border border-input bg-card px-3 text-base";
+
+/** Lista das reuniões do mês com filtro por dia, status, SDR e busca por empresa. */
+export function ListaReunioes({
+  reunioes,
+  nomes,
+  mes,
+}: {
+  reunioes: ReuniaoP[];
+  nomes: Record<string, string>;
+  mes: string;
+}) {
+  const [dia, setDia] = useState("");
+  const [status, setStatus] = useState<"" | StatusReuniao>("");
+  const [sdr, setSdr] = useState("");
+  const [busca, setBusca] = useState("");
+
   if (reunioes.length === 0) {
     return <p className="text-sm text-muted-foreground">Nenhuma reunião lançada neste mês.</p>;
   }
+
+  const ultimoDia = new Date(Date.UTC(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0)).getUTCDate();
+  const sdrsDoMes = [...new Set(reunioes.map((r) => r.sdr_id))].sort((a, b) =>
+    (nomes[a] ?? "").localeCompare(nomes[b] ?? "", "pt-BR"),
+  );
+  const termo = busca.trim().toLowerCase();
+  const filtradas = reunioes.filter(
+    (r) =>
+      (!dia || r.data === dia) &&
+      (!status || r.status === status) &&
+      (!sdr || r.sdr_id === sdr) &&
+      (!termo || r.empresa.toLowerCase().includes(termo)),
+  );
+  const filtrando = Boolean(dia || status || sdr || termo);
+
+  // Resumo: reuniões realizadas no recorte, por SDR
+  const realizadas = filtradas.filter((r) => r.status === "realizada");
+  const porSdr = Object.entries(
+    realizadas.reduce<Record<string, number>>((acc, r) => ({ ...acc, [r.sdr_id]: (acc[r.sdr_id] ?? 0) + 1 }), {}),
+  ).sort((a, b) => b[1] - a[1]);
+
+  const limpar = () => {
+    setDia("");
+    setStatus("");
+    setSdr("");
+    setBusca("");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label htmlFor="f-dia" className={rotulo}>
+            Dia
+          </label>
+          <Input
+            id="f-dia"
+            type="date"
+            value={dia}
+            min={`${mes}-01`}
+            max={`${mes}-${String(ultimoDia).padStart(2, "0")}`}
+            onChange={(e) => setDia(e.target.value)}
+            className="h-10 w-44 text-base"
+          />
+        </div>
+        <div>
+          <label htmlFor="f-status" className={rotulo}>
+            Status
+          </label>
+          <select
+            id="f-status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as "" | StatusReuniao)}
+            className={campoFiltro}
+          >
+            <option value="">Todos</option>
+            {STATUS_REUNIAO.map((s) => (
+              <option key={s.valor} value={s.valor}>
+                {s.rotulo}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="f-sdr" className={rotulo}>
+            SDR
+          </label>
+          <select id="f-sdr" value={sdr} onChange={(e) => setSdr(e.target.value)} className={campoFiltro}>
+            <option value="">Todos</option>
+            {sdrsDoMes.map((id) => (
+              <option key={id} value={id}>
+                {nomes[id] ?? "—"}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-48 flex-1">
+          <label htmlFor="f-busca" className={rotulo}>
+            Buscar empresa
+          </label>
+          <Input
+            id="f-busca"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Nome da marmoraria"
+            className="h-10 text-base"
+          />
+        </div>
+        {filtrando && (
+          <Button variant="outline" onClick={limpar} className="h-10">
+            Limpar filtros
+          </Button>
+        )}
+      </div>
+
+      <p className="text-sm tabular-nums text-muted-foreground">
+        <strong className="text-foreground">{realizadas.length}</strong>{" "}
+        {realizadas.length === 1 ? "reunião realizada" : "reuniões realizadas"}
+        {dia ? ` em ${dataCurta(dia)}` : " no mês"}
+        {porSdr.length > 0 && <> · {porSdr.map(([id, n]) => `${nomes[id] ?? "—"} ${n}`).join(" · ")}</>}
+        {filtrando && (
+          <>
+            {" "}
+            — mostrando {filtradas.length} de {reunioes.length} lançamentos
+          </>
+        )}
+      </p>
+
+      {filtradas.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhuma reunião com esses filtros.</p>
+      ) : (
+        <TabelaReunioes reunioes={filtradas} nomes={nomes} />
+      )}
+    </div>
+  );
+}
+
+function TabelaReunioes({ reunioes, nomes }: { reunioes: ReuniaoP[]; nomes: Record<string, string> }) {
   return (
     <div className="-mx-3 overflow-x-auto">
       <table className="w-full min-w-[640px] border-collapse text-base">
