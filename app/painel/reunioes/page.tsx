@@ -43,8 +43,15 @@ export default async function ReunioesPage({ searchParams }: { searchParams: Pro
       <Bloco titulo="Lançar reunião">
         <FormReuniao sdrs={sdrs} closers={closers} dataPadrao={dataPadrao} />
       </Bloco>
-      <Bloco titulo="Reuniões do mês" extra={`${doMes.length} ${doMes.length === 1 ? "lançamento" : "lançamentos"}`}>
-        <ListaReunioes key={mes} reunioes={doMes} nomes={nomes} mes={mes} />
+      <Bloco titulo="Reuniões" extra={`${doMes.length} ${doMes.length === 1 ? "lançamento" : "lançamentos"} no mês`}>
+        <ListaReunioes
+          key={mes}
+          reunioes={dados.reunioes}
+          nomes={nomes}
+          mes={mes}
+          hoje={hoje}
+          limites={{ min: `${anoDe(mes) - 1}-12-01`, max: `${anoDe(mes)}-12-31` }}
+        />
       </Bloco>
     </>
   );

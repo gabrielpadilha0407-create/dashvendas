@@ -90,38 +90,49 @@ export function FormReuniao({ sdrs, closers, dataPadrao }: { sdrs: Opcao[]; clos
 
 const campoFiltro = "h-10 rounded-md border border-input bg-card px-3 text-base";
 
-/** Lista das reuniões do mês com filtro por dia, status, SDR e busca por empresa. */
+/** Lista de reuniões com filtro por período (de/até), status, SDR e busca por empresa. Começa mostrando o mês escolhido. */
 export function ListaReunioes({
   reunioes,
   nomes,
   mes,
+  hoje,
+  limites,
 }: {
+  /** todas as reuniões carregadas (ano escolhido + dezembro anterior) */
   reunioes: ReuniaoP[];
   nomes: Record<string, string>;
   mes: string;
+  hoje: string;
+  limites: { min: string; max: string };
 }) {
-  const [dia, setDia] = useState("");
+  const ultimoDia = new Date(Date.UTC(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0)).getUTCDate();
+  const inicioMes = `${mes}-01`;
+  const fimMes = `${mes}-${String(ultimoDia).padStart(2, "0")}`;
+  const [de, setDe] = useState(inicioMes);
+  const [ate, setAte] = useState(fimMes);
   const [status, setStatus] = useState<"" | StatusReuniao>("");
   const [sdr, setSdr] = useState("");
   const [busca, setBusca] = useState("");
 
-  if (reunioes.length === 0) {
-    return <p className="text-sm text-muted-foreground">Nenhuma reunião lançada neste mês.</p>;
-  }
-
-  const ultimoDia = new Date(Date.UTC(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0)).getUTCDate();
-  const sdrsDoMes = [...new Set(reunioes.map((r) => r.sdr_id))].sort((a, b) =>
+  const doPeriodo = reunioes.filter((r) => (!de || r.data >= de) && (!ate || r.data <= ate));
+  const sdrsDoMes = [...new Set(doPeriodo.map((r) => r.sdr_id))].sort((a, b) =>
     (nomes[a] ?? "").localeCompare(nomes[b] ?? "", "pt-BR"),
   );
   const termo = busca.trim().toLowerCase();
-  const filtradas = reunioes.filter(
+  const filtradas = doPeriodo.filter(
     (r) =>
-      (!dia || r.data === dia) &&
       (!status || r.status === status) &&
       (!sdr || r.sdr_id === sdr) &&
       (!termo || r.empresa.toLowerCase().includes(termo)),
   );
-  const filtrando = Boolean(dia || status || sdr || termo);
+  const periodoDoMes = de === inicioMes && ate === fimMes;
+  const filtrando = Boolean(!periodoDoMes || status || sdr || termo);
+  const textoPeriodo =
+    de && ate && de === ate
+      ? ` em ${dataCurta(de)}`
+      : periodoDoMes
+        ? " no mês"
+        : ` de ${de ? dataCurta(de) : "início"} a ${ate ? dataCurta(ate) : "hoje"}`;
 
   // Resumo: reuniões realizadas no recorte, por SDR
   const realizadas = filtradas.filter((r) => r.status === "realizada");
@@ -130,7 +141,8 @@ export function ListaReunioes({
   ).sort((a, b) => b[1] - a[1]);
 
   const limpar = () => {
-    setDia("");
+    setDe(inicioMes);
+    setAte(fimMes);
     setStatus("");
     setSdr("");
     setBusca("");
@@ -140,19 +152,45 @@ export function ListaReunioes({
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label htmlFor="f-dia" className={rotulo}>
-            Dia
+          <label htmlFor="f-de" className={rotulo}>
+            De
           </label>
           <Input
-            id="f-dia"
+            id="f-de"
             type="date"
-            value={dia}
-            min={`${mes}-01`}
-            max={`${mes}-${String(ultimoDia).padStart(2, "0")}`}
-            onChange={(e) => setDia(e.target.value)}
+            value={de}
+            min={limites.min}
+            max={limites.max}
+            onChange={(e) => setDe(e.target.value)}
             className="h-10 w-44 text-base"
           />
         </div>
+        <div>
+          <label htmlFor="f-ate" className={rotulo}>
+            Até
+          </label>
+          <Input
+            id="f-ate"
+            type="date"
+            value={ate}
+            min={limites.min}
+            max={limites.max}
+            onChange={(e) => setAte(e.target.value)}
+            className="h-10 w-44 text-base"
+          />
+        </div>
+        {hoje >= limites.min && hoje <= limites.max && (
+          <Button
+            variant="outline"
+            className="h-10"
+            onClick={() => {
+              setDe(hoje);
+              setAte(hoje);
+            }}
+          >
+            Hoje
+          </Button>
+        )}
         <div>
           <label htmlFor="f-status" className={rotulo}>
             Status
@@ -206,12 +244,12 @@ export function ListaReunioes({
       <p className="text-sm tabular-nums text-muted-foreground">
         <strong className="text-foreground">{realizadas.length}</strong>{" "}
         {realizadas.length === 1 ? "reunião realizada" : "reuniões realizadas"}
-        {dia ? ` em ${dataCurta(dia)}` : " no mês"}
+        {textoPeriodo}
         {porSdr.length > 0 && <> · {porSdr.map(([id, n]) => `${nomes[id] ?? "—"} ${n}`).join(" · ")}</>}
         {filtrando && (
           <>
             {" "}
-            — mostrando {filtradas.length} de {reunioes.length} lançamentos
+            — mostrando {filtradas.length} {filtradas.length === 1 ? "lançamento" : "lançamentos"}
           </>
         )}
       </p>
