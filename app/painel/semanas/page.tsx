@@ -1,8 +1,18 @@
 import { getPainelDados } from "@/lib/painel/data";
-import { anoDe, anosDisponiveis, diasUteisEntre, hojeSP, metaGlobal, resolverMes, visaoSemanas } from "@/lib/painel/calc";
+import {
+  anoDe,
+  anosDisponiveis,
+  diasUteisEntre,
+  hojeSP,
+  metaGlobal,
+  resolverMes,
+  visaoSemanas,
+  visaoSemanasSdr,
+} from "@/lib/painel/calc";
 import { EditorSemanas, type SemanaEditavel } from "@/components/painel/editor-semanas";
+import { EditorSemanasSdr } from "@/components/painel/editor-semanas-sdr";
 import { SeletorMes } from "@/components/painel/seletor-mes";
-import { Bloco } from "@/components/painel/ui";
+import { Bloco, ErroBloco } from "@/components/painel/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -47,12 +57,14 @@ export default async function SemanasPage({ searchParams }: { searchParams: Prom
     realizadoNaoRecorrente: s.realizado.naoRecorrente,
   }));
   const global = metaGlobal(dados, mes);
+  const falhasSdr = erros.filter((e) => ["pessoas", "reunioes", "metas_semanais_sdr"].includes(e.tabela));
+  const sdr = visaoSemanasSdr(dados, mes, hoje);
 
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SeletorMes mes={mes} anos={anos} />
-        <p className="text-sm text-muted-foreground">Metas do time inteiro, sem divisão por pessoa.</p>
+        <p className="text-sm text-muted-foreground">Vendas: metas do time inteiro. Reuniões: meta por SDR.</p>
       </div>
       <Bloco>
         <EditorSemanas
@@ -62,6 +74,31 @@ export default async function SemanasPage({ searchParams }: { searchParams: Prom
           metaMesMrr={global?.mrr ?? 0}
           metaMesNaoRecorrente={global?.naoRecorrente ?? 0}
         />
+      </Bloco>
+      <Bloco>
+        {falhasSdr.length > 0 ? (
+          <>
+            <ErroBloco tabelas={falhasSdr.map((e) => e.tabela)} />
+            <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-muted-foreground">
+              {falhasSdr.map((e) => (
+                <li key={e.tabela}>{e.mensagem}</li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <EditorSemanasSdr
+            key={`sdr-${mes}`}
+            mes={mes}
+            semanas={sdr.semanas.map((s) => ({
+              numero: s.numero,
+              primeiroUtil: s.primeiroUtil,
+              ultimoUtil: s.ultimoUtil,
+              status: s.status,
+              diasRestantes: s.diasRestantes,
+            }))}
+            sdrs={sdr.linhas}
+          />
+        )}
       </Bloco>
     </>
   );

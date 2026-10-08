@@ -129,3 +129,31 @@ export async function salvarMetasSemanais(dados: MetasSemanaisDoMes): Promise<Re
   atualizarTelas();
   return { error: null, enviadoEm: Date.now() };
 }
+
+// ---------- Metas semanais de reuniões realizadas, por SDR
+
+export type MetasSemanaisSdrDoMes = {
+  mes: string;
+  itens: { pessoaId: string; semana: number; metaReunioes: number }[];
+};
+
+export async function salvarMetasSemanaisSdr(dados: MetasSemanaisSdrDoMes): Promise<ResultadoAcao> {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(dados.mes) || anoDe(dados.mes) < ANO_INICIAL) return { error: "Mês inválido." };
+  for (const i of dados.itens) {
+    if (!Number.isInteger(i.semana) || i.semana < 1 || i.semana > 6) return { error: "Semana inválida." };
+    if (!valido(i.metaReunioes) || !Number.isInteger(i.metaReunioes)) {
+      return { error: `Meta inválida na semana ${i.semana}. Use números inteiros de reuniões.` };
+    }
+  }
+  if (dados.itens.length === 0) return { error: null, enviadoEm: Date.now() };
+
+  const sb = supabaseServer();
+  const { error } = await sb.from("metas_semanais_sdr").upsert(
+    dados.itens.map((i) => ({ mes: dados.mes, semana: i.semana, pessoa_id: i.pessoaId, meta_reunioes: i.metaReunioes })),
+    { onConflict: "mes,semana,pessoa_id" },
+  );
+  if (error) return { error: `Erro ao salvar as metas de reuniões: ${error.message}` };
+
+  atualizarTelas();
+  return { error: null, enviadoEm: Date.now() };
+}

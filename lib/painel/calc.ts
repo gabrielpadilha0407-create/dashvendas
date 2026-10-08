@@ -67,6 +67,7 @@ export type PainelDados = {
   metasIndividuais: MetaIndividualP[];
   reunioes: ReuniaoP[];
   metasSemanais: MetaSemanalP[];
+  metasSemanaisSdr: MetaSemanalSdrP[];
 };
 
 // ---------- Datas
@@ -150,6 +151,7 @@ export function diasUteisEntre(inicio: string, fim: string, hoje: string): numbe
 // ---------- Semanas
 
 export type MetaSemanalP = { mes: string; semana: number; meta_mrr: number; meta_nao_recorrente: number };
+export type MetaSemanalSdrP = { mes: string; semana: number; pessoa_id: string; meta_reunioes: number };
 
 export type Semana = {
   numero: number;
@@ -288,6 +290,59 @@ export function visaoSemanas(d: PainelDados, mes: string, hoje: string): LinhaSe
       diaria,
     };
   });
+}
+
+// ---------- Metas semanais de reuniões por SDR
+
+/** Repasse de uma meta só (mesma regra do repasse do time): o que faltou numa semana encerrada vai inteiro para a seguinte. */
+export function repasseSimples(semanas: { meta: number; realizado: number; status: StatusSemana }[]): { repasse: number; meta: number }[] {
+  let saldo = 0;
+  return semanas.map((w) => {
+    const r = { repasse: saldo, meta: w.meta + saldo };
+    saldo = w.status === "passada" ? Math.max(0, r.meta - w.realizado) : 0;
+    return r;
+  });
+}
+
+export type SemanaComStatus = Semana & { status: StatusSemana; diasRestantes: number };
+
+export type LinhaSemanaSdr = {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  /** uma entrada por semana, na mesma ordem de `semanas` */
+  porSemana: { metaPlanejada: number; realizadas: number }[];
+};
+
+/** SDRs (ativos ou com meta/reunião no mês) e, para cada semana, a meta planejada e as reuniões realizadas. */
+export function visaoSemanasSdr(d: PainelDados, mes: string, hoje: string) {
+  const semanas: SemanaComStatus[] = semanasDoMes(mes).map((s) => ({
+    ...s,
+    status: hoje > s.fim ? "passada" : hoje < s.inicio ? "futura" : "atual",
+    diasRestantes: diasUteisEntre(s.inicio, s.fim, hoje),
+  }));
+  const metasMes = d.metasSemanaisSdr.filter((m) => m.mes === mes);
+  const realizadasMes = d.reunioes.filter((r) => r.data.startsWith(mes) && r.status === "realizada");
+  const ids = new Set<string>();
+  for (const p of d.pessoas) if (p.papel === "SDR" && p.ativo) ids.add(p.id);
+  for (const m of metasMes) if (m.meta_reunioes > 0) ids.add(m.pessoa_id);
+  for (const r of realizadasMes) ids.add(r.sdr_id);
+
+  const linhas: LinhaSemanaSdr[] = [...ids]
+    .map((id) => {
+      const p = d.pessoas.find((x) => x.id === id);
+      return {
+        id,
+        nome: p?.nome ?? "Pessoa removida",
+        ativo: p?.ativo ?? false,
+        porSemana: semanas.map((s) => ({
+          metaPlanejada: metasMes.find((m) => m.pessoa_id === id && m.semana === s.numero)?.meta_reunioes ?? 0,
+          realizadas: realizadasMes.filter((r) => r.sdr_id === id && r.data >= s.inicio && r.data <= s.fim).length,
+        })),
+      };
+    })
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  return { semanas, linhas };
 }
 
 // ---------- Números

@@ -1,7 +1,62 @@
 import Link from "next/link";
-import { faixaDe, percentual, visaoSemanas, type PainelDados } from "@/lib/painel/calc";
-import { brl, dataCurta, pct } from "@/lib/painel/formato";
+import { faixaDe, percentual, repasseSimples, visaoSemanas, visaoSemanasSdr, type PainelDados } from "@/lib/painel/calc";
+import { brl, dataCurta, inteiro, pct, reunioesPorDia } from "@/lib/painel/formato";
 import { Barra, Bloco, SeloFaixa } from "./ui";
+
+/** Reuniões realizadas na semana atual por SDR, contra a meta semanal de cada um (já com repasse). */
+function ReunioesDaSemana({ dados, mes, hoje }: { dados: PainelDados; mes: string; hoje: string }) {
+  const { semanas, linhas } = visaoSemanasSdr(dados, mes, hoje);
+  const i = semanas.findIndex((s) => s.status === "atual");
+  if (i < 0) return null;
+  const dias = semanas[i].diasRestantes;
+  const itens = linhas
+    .map((p) => {
+      const ajuste = repasseSimples(
+        semanas.map((s, j) => ({ meta: p.porSemana[j].metaPlanejada, realizado: p.porSemana[j].realizadas, status: s.status })),
+      )[i];
+      return { nome: p.nome, meta: ajuste.meta, repasse: ajuste.repasse, feitas: p.porSemana[i].realizadas };
+    })
+    .filter((x) => x.meta > 0);
+  if (itens.length === 0) return null;
+
+  return (
+    <div className="mt-6 border-t border-border pt-4">
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Reuniões realizadas na semana</h3>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {itens.map((x) => {
+          const p = percentual(x.feitas, x.meta);
+          const falta = Math.max(0, x.meta - x.feitas);
+          return (
+            <div key={x.nome}>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-semibold">{x.nome}</span>
+                <span className="tabular-nums">
+                  <span className="text-xl font-bold">{inteiro(x.feitas)}</span>
+                  <span className="text-muted-foreground"> / {inteiro(x.meta)}</span>
+                </span>
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                <Barra pct={p} faixa={faixaDe(p)} />
+                <span className="w-10 shrink-0 text-right text-xs tabular-nums">{pct(p)}</span>
+              </div>
+              <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+                {falta === 0 ? (
+                  <span className="text-[#3fd13f]">Meta batida</span>
+                ) : (
+                  <>
+                    faltam {inteiro(falta)}
+                    {dias > 0 ? ` · ${reunioesPorDia(falta / dias)}` : ""}
+                  </>
+                )}
+                {x.repasse > 0 && <span className="text-[#fab219]"> · inclui {inteiro(x.repasse)} da semana anterior</span>}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 /** Andamento da semana corrente contra a meta semanal do time. Só aparece no mês atual. */
 export function SemanaAtual({ dados, mes, hoje }: { dados: PainelDados; mes: string; hoje: string }) {
@@ -18,6 +73,7 @@ export function SemanaAtual({ dados, mes, hoje }: { dados: PainelDados; mes: str
             Cadastrar metas semanais
           </Link>
         </p>
+        <ReunioesDaSemana dados={dados} mes={mes} hoje={hoje} />
       </Bloco>
     );
   }
@@ -106,6 +162,7 @@ export function SemanaAtual({ dados, mes, hoje }: { dados: PainelDados; mes: str
           {parcial("Não recorrente", r.naoRecorrente, semana.metaNaoRecorrente)}
         </div>
       </div>
+      <ReunioesDaSemana dados={dados} mes={mes} hoje={hoje} />
     </Bloco>
   );
 }
